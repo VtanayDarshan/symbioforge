@@ -1,1 +1,70 @@
-[]
+[
+  {
+    "id": "fac_009",
+    "name": "Coimbatore Coconut Products",
+    "location": { "lat": 11.0200, "lng": 76.9555, "zone": "SIDCO Phase I, Coimbatore", "districtId": "coimbatore" },
+    "industry": "food_processing",
+    "subtype": "coconut processing",
+    "production": {
+      "capacityTonsPerDay": 7,
+      "products": ["coconut oil", "desiccated coconut", "coconut cream"],
+      "rawMaterials": ["raw coconuts", "packaging materials"]
+    },
+    "employees": 65,
+    "operatingHoursPerDay": 10,
+    "registeredAt": "",
+    "lastUpdated": "",
+    "isActive": true
+  },
+  {
+    "id": "fac_010",
+    "name": "SuryaWood Timber Works",
+    "location": { "lat": 11.0250, "lng": 76.9600, "zone": "SIDCO Phase III, Coimbatore", "districtId": "coimbatore" },
+    "industry": "wood_processing",
+    "subtype": "furniture timber and plywood",
+    "production": {
+      "capacityTonsPerDay": 3,
+      "products": ["plywood sheets", "timber planks", "wooden furniture frames"],
+      "rawMaterials": ["raw timber logs", "adhesives", "varnish", "nails"]
+    },
+    "employees": 40,
+    "operatingHoursPerDay": 8,
+    "registeredAt": "",
+    "lastUpdated": "",
+    "isActive": true
+  },
+  {
+    "id": "fac_011",
+    "name": "Kumar Metals Foundry",
+    "location": { "lat": 11.0188, "lng": 76.9635, "zone": "SIDCO Phase II, Coimbatore", "districtId": "coimbatore" },
+    "industry": "metal_fabrication",
+    "subtype": "iron and steel casting",
+    "production": {
+      "capacityTonsPerDay": 6,
+      "products": ["cast iron parts", "steel castings", "pump housings"],
+      "rawMaterials": ["pig iron", "steel scrap", "coke", "sand"]
+    },
+    "employees": 80,
+    "operatingHoursPerDay": 16,
+    "registeredAt": "",
+    "lastUpdated": "",
+    "isActive": true
+  },
+  {
+    "id": "fac_012",
+    "name": "EcoRubber Products",
+    "location": { "lat": 11.0222, "lng": 76.9595, "zone": "SIDCO Phase I, Coimbatore", "districtId": "coimbatore" },
+    "industry": "rubber_processing",
+    "subtype": "rubber molding and extrusion",
+    "production": {
+      "capacityTonsPerDay": 2,
+      "products": ["rubber gaskets", "rubber hoses", "floor mats"],
+      "rawMaterials": ["natural rubber", "synthetic rubber", "carbon black", "sulfur"]
+    },
+    "employees": 35,
+    "operatingHoursPerDay": 8,
+    "registeredAt": "",
+    "lastUpdated": "",
+    "isActive": true
+  }
+]

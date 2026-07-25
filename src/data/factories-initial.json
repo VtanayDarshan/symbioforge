@@ -1,1 +1,138 @@
-[]
+[
+  {
+    "id": "fac_001",
+    "name": "Lakshmi Textiles Pvt Ltd",
+    "location": { "lat": 11.0218, "lng": 76.9629, "zone": "SIDCO Phase II, Coimbatore", "districtId": "coimbatore" },
+    "industry": "textile_manufacturing",
+    "subtype": "cotton-polyester blend",
+    "production": {
+      "capacityTonsPerDay": 5,
+      "products": ["cotton-polyester blend fabric", "dyed fabric rolls"],
+      "rawMaterials": ["raw cotton", "polyester fiber", "textile dyes", "sizing chemicals"]
+    },
+    "employees": 120,
+    "operatingHoursPerDay": 16,
+    "registeredAt": "2025-07-25T08:00:00.000Z",
+    "lastUpdated": "2025-07-25T08:00:00.000Z",
+    "isActive": true
+  },
+  {
+    "id": "fac_002",
+    "name": "Annapurna Foods Processing Ltd",
+    "location": { "lat": 11.0185, "lng": 76.9590, "zone": "SIDCO Phase II, Coimbatore", "districtId": "coimbatore" },
+    "industry": "food_processing",
+    "subtype": "rice and grain milling",
+    "production": {
+      "capacityTonsPerDay": 12,
+      "products": ["polished rice", "rice flour", "rice bran oil"],
+      "rawMaterials": ["paddy rice", "packaging materials"]
+    },
+    "employees": 85,
+    "operatingHoursPerDay": 12,
+    "registeredAt": "2025-07-25T08:05:00.000Z",
+    "lastUpdated": "2025-07-25T08:05:00.000Z",
+    "isActive": true
+  },
+  {
+    "id": "fac_003",
+    "name": "GreenPulp Paper Mill",
+    "location": { "lat": 11.0240, "lng": 76.9650, "zone": "SIDCO Phase III, Coimbatore", "districtId": "coimbatore" },
+    "industry": "paper_manufacturing",
+    "subtype": "recycled paper and cardboard",
+    "production": {
+      "capacityTonsPerDay": 8,
+      "products": ["corrugated cardboard", "kraft paper", "paper rolls"],
+      "rawMaterials": ["waste paper", "wood pulp", "starch", "alum"]
+    },
+    "employees": 95,
+    "operatingHoursPerDay": 16,
+    "registeredAt": "2025-07-25T08:10:00.000Z",
+    "lastUpdated": "2025-07-25T08:10:00.000Z",
+    "isActive": true
+  },
+  {
+    "id": "fac_004",
+    "name": "Sharma Engineering Works",
+    "location": { "lat": 11.0195, "lng": 76.9610, "zone": "SIDCO Phase II, Coimbatore", "districtId": "coimbatore" },
+    "industry": "metal_fabrication",
+    "subtype": "aluminum and steel fabrication",
+    "production": {
+      "capacityTonsPerDay": 3,
+      "products": ["aluminum extrusions", "steel frames", "sheet metal components"],
+      "rawMaterials": ["aluminum ingots", "steel sheets", "welding rods", "cutting oils"]
+    },
+    "employees": 60,
+    "operatingHoursPerDay": 10,
+    "registeredAt": "2025-07-25T08:15:00.000Z",
+    "lastUpdated": "2025-07-25T08:15:00.000Z",
+    "isActive": true
+  },
+  {
+    "id": "fac_005",
+    "name": "ReThread Recyclers",
+    "location": { "lat": 11.0210, "lng": 76.9580, "zone": "SIDCO Phase I, Coimbatore", "districtId": "coimbatore" },
+    "industry": "recycling",
+    "subtype": "plastic and textile recycling",
+    "production": {
+      "capacityTonsPerDay": 4,
+      "products": ["recycled PE pellets", "recycled polyester fiber", "shredded plastic flakes"],
+      "rawMaterials": ["waste plastics", "waste textiles", "waste polyester"]
+    },
+    "employees": 45,
+    "operatingHoursPerDay": 10,
+    "registeredAt": "2025-07-25T08:20:00.000Z",
+    "lastUpdated": "2025-07-25T08:20:00.000Z",
+    "isActive": true
+  },
+  {
+    "id": "fac_006",
+    "name": "TamilChem Industries",
+    "location": { "lat": 11.0160, "lng": 76.9640, "zone": "SIDCO Phase III, Coimbatore", "districtId": "coimbatore" },
+    "industry": "chemical_processing",
+    "subtype": "industrial chemicals and solvents",
+    "production": {
+      "capacityTonsPerDay": 6,
+      "products": ["industrial solvents", "cleaning agents", "adhesives"],
+      "rawMaterials": ["base chemicals", "surfactants", "solvents", "packaging drums"]
+    },
+    "employees": 70,
+    "operatingHoursPerDay": 8,
+    "registeredAt": "2025-07-25T08:25:00.000Z",
+    "lastUpdated": "2025-07-25T08:25:00.000Z",
+    "isActive": true
+  },
+  {
+    "id": "fac_007",
+    "name": "PackRight Packaging Solutions",
+    "location": { "lat": 11.0230, "lng": 76.9570, "zone": "SIDCO Phase I, Coimbatore", "districtId": "coimbatore" },
+    "industry": "packaging",
+    "subtype": "cardboard and corrugated packaging",
+    "production": {
+      "capacityTonsPerDay": 5,
+      "products": ["corrugated boxes", "packaging inserts", "display stands"],
+      "rawMaterials": ["kraft paper", "corrugated sheets", "adhesives", "printing inks"]
+    },
+    "employees": 55,
+    "operatingHoursPerDay": 12,
+    "registeredAt": "2025-07-25T08:30:00.000Z",
+    "lastUpdated": "2025-07-25T08:30:00.000Z",
+    "isActive": true
+  },
+  {
+    "id": "fac_008",
+    "name": "KovaiPlast Industries",
+    "location": { "lat": 11.0175, "lng": 76.9620, "zone": "SIDCO Phase II, Coimbatore", "districtId": "coimbatore" },
+    "industry": "plastics_manufacturing",
+    "subtype": "PE and PP molding",
+    "production": {
+      "capacityTonsPerDay": 4,
+      "products": ["PE containers", "PP furniture parts", "plastic sheets"],
+      "rawMaterials": ["PE granules", "PP granules", "color masterbatch", "additives"]
+    },
+    "employees": 50,
+    "operatingHoursPerDay": 12,
+    "registeredAt": "2025-07-25T08:35:00.000Z",
+    "lastUpdated": "2025-07-25T08:35:00.000Z",
+    "isActive": true
+  }
+]
