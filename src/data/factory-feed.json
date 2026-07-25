@@ -1,0 +1,50 @@
+[
+  {
+    "id": "fact_16",
+    "name": "Coimbatore Insulation Systems",
+    "industryType": "Building Materials",
+    "location": {
+      "lat": 11.0182,
+      "lng": 76.9582,
+      "address": "SIDCO Phase II, Coimbatore"
+    },
+    "productionCapacity": "3 tons/day thermal rolls",
+    "rawMaterials": ["Glass wool", "Polyester fiber", "Adhesives"],
+    "declaredWastes": ["Insulation trimmings", "Adhesive waste"],
+    "complianceStatus": "pending",
+    "savingsEarned": 0,
+    "co2Avoided": 0
+  },
+  {
+    "id": "fact_17",
+    "name": "Karthik Board Mills",
+    "industryType": "Paper Manufacturing",
+    "location": {
+      "lat": 11.0312,
+      "lng": 76.9452,
+      "address": "Kurichi Industrial Area, Coimbatore"
+    },
+    "productionCapacity": "10 tons/day duplex board",
+    "rawMaterials": ["Waste paper", "Cellulose fiber", "Starch"],
+    "declaredWastes": ["Board trimmings", "Wastewater sludge"],
+    "complianceStatus": "pending",
+    "savingsEarned": 0,
+    "co2Avoided": 0
+  },
+  {
+    "id": "fact_18",
+    "name": "Coimbatore Composites",
+    "industryType": "Construction Materials",
+    "location": {
+      "lat": 11.0225,
+      "lng": 76.9654,
+      "address": "SIDCO Phase I, Coimbatore"
+    },
+    "productionCapacity": "5 tons/day composite panels",
+    "rawMaterials": ["Resins", "Wood flour", "Fillers"],
+    "declaredWastes": ["Composite trimmings", "Spent resin"],
+    "complianceStatus": "pending",
+    "savingsEarned": 0,
+    "co2Avoided": 0
+  }
+]
