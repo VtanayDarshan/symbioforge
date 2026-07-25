@@ -73,7 +73,7 @@ export class Scheduler {
 
     const factory = this.feedFactories[this.feedIndex++];
     this.stateManager.addLog('System', `[Drip Feed] New factory detected: "${factory.name}"`, 'info');
-    
+
     // Register via Clerk
     this.stateManager.addFactory(factory);
     this.eventBus.publish({
@@ -84,7 +84,7 @@ export class Scheduler {
 
   private runSentinelCheck() {
     this.stateManager.addLog('Sentinel', 'Running ecosystem health check...', 'info');
-    
+
     // Randomly simulate a factory shutdown or volume change to showcase self-healing
     const rand = Math.random();
     if (rand < 0.15) {
@@ -94,14 +94,14 @@ export class Scheduler {
       if (activeFactories.length > 5) {
         const target = activeFactories[Math.floor(Math.random() * activeFactories.length)];
         this.stateManager.addLog('Sentinel', `ALERT: Factory "${target.name}" reported temporary production halt!`, 'warning');
-        
+
         // Break matches involving this factory
         const matches = this.stateManager.getMatches();
         const affectedMatches = matches.filter(m => m.sourceFactoryId === target.id || m.targetFactoryId === target.id);
-        
+
         if (affectedMatches.length > 0) {
           this.stateManager.addLog('Sentinel', `Impact: ${affectedMatches.length} symbiotic chains affected. Re-triggering Matchmaker...`, 'warning');
-          
+
           // Temporarily set target status to pending
           target.complianceStatus = 'pending';
           this.stateManager.recalculateMetrics();

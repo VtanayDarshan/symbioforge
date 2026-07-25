@@ -70,7 +70,7 @@ export class AgentChain {
     if (!factory) return;
 
     this.stateManager.addLog('Scout', `Ingesting factory profile: "${factory.name}"`, 'info');
-    
+
     // Simulate Scout processing delay
     setTimeout(() => {
       this.eventBus.publish({

@@ -7,8 +7,8 @@ export class SPCBAnnualStatementTemplate {
    */
   public static generateReport(factory: FactoryProfile): string {
     const date = new Date().toLocaleDateString('en-IN');
-    
-    let wasteList = factory.declaredWasteOutputs.map(w => 
+
+    let wasteList = factory.declaredWasteOutputs.map(w =>
       `  - [${w.category}] ${w.name}: ${w.estimatedDailyVolumeKg} kg/day (${w.physicalForm})`
     ).join('\n');
 
