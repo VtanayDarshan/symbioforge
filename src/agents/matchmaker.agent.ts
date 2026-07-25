@@ -1,16 +1,20 @@
 import { StateManager } from '../orchestrator/state-manager.js';
 import { EventBus } from '../orchestrator/event-bus.js';
 import { MatchingAlgorithm } from '../core/matching-algorithm.js';
+import { WasteClassifier } from '../core/waste-classifier.js';
+import { SymbioticMatch } from '../core/types.js';
 
 export class MatchmakerAgent {
   private stateManager: StateManager;
   private eventBus: EventBus;
   private matchingAlgorithm: MatchingAlgorithm;
+  private wasteClassifier: WasteClassifier;
 
   constructor() {
     this.stateManager = StateManager.getInstance();
     this.eventBus = EventBus.getInstance();
     this.matchingAlgorithm = new MatchingAlgorithm();
+    this.wasteClassifier = new WasteClassifier();
     this.setupListeners();
   }
 
@@ -21,36 +25,37 @@ export class MatchmakerAgent {
     });
   }
 
+  private discoverMultiHopChains(directMatches: SymbioticMatch[]): string[] {
+    const chains: string[] = [];
+    const bySource = new Map<string, SymbioticMatch[]>();
+    for (const m of directMatches) {
+      const list = bySource.get(m.sourceFactoryId) || [];
+      list.push(m);
+      bySource.set(m.sourceFactoryId, list);
+    }
+
+    for (const hop1 of directMatches) {
+      const hop2List = bySource.get(hop1.targetFactoryId);
+      if (!hop2List) continue;
+      for (const hop2 of hop2List) {
+        if (hop2.targetFactoryId === hop1.sourceFactoryId) continue;
+        chains.push(
+          `${hop1.sourceFactoryName} →[${hop1.wasteStreamName}]→ ${hop1.targetFactoryName} →[${hop2.wasteStreamName}]→ ${hop2.targetFactoryName}`
+        );
+      }
+    }
+    return chains;
+  }
+
   public discoverMatches() {
     const factories = this.stateManager.getFactories();
     this.stateManager.addLog('Matchmaker', `Scanning ${factories.length} factories for new symbioses...`, 'info');
 
-    // Ensure all factories have waste streams profiled
     for (const f of factories) {
       if (!f.wasteStreams && f.declaredWastes.length > 0) {
-        // Run Profiler synchronously if needed
-        const profiler = new (class {
-          private classifier = new (class {
-            classifyWaste(fid: string, fname: string, wname: string) {
-              return {
-                id: `${fid}_${wname.toLowerCase().replace(/\s+/g, '_')}`,
-                factoryId: fid,
-                factoryName: fname,
-                name: wname,
-                category: 'organic' as const,
-                physicalForm: 'solid' as const,
-                volume: 100,
-                contamination: 'clean' as const,
-                seasonalVariation: 'none' as const,
-                reusePotential: 80
-              };
-            }
-          })();
-          profile(fact: any) {
-            fact.wasteStreams = fact.declaredWastes.map((w: string) => this.classifier.classifyWaste(fact.id, fact.name, w));
-          }
-        })();
-        profiler.profile(f);
+        f.wasteStreams = f.declaredWastes.map(w =>
+          this.wasteClassifier.classifyWaste(f.id, f.name, w)
+        );
       }
     }
 
@@ -63,7 +68,15 @@ export class MatchmakerAgent {
       'success'
     );
 
-    // Trigger Inventor (or let the chain continue)
+    const chains = this.discoverMultiHopChains(matches);
+    if (chains.length > 0) {
+      this.stateManager.addLog(
+        'Matchmaker',
+        `Discovered ${chains.length} multi-hop supply chains. Example: ${chains[0]}`,
+        'success'
+      );
+    }
+
     this.eventBus.publish({
       type: 'PRODUCTS_INVENTED',
       payload: { productIds: [] }

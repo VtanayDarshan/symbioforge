@@ -1,14 +1,73 @@
 import { ToolDecorator as Tool, ResourceDecorator as Resource, Widget, Injectable, ExecutionContext, z } from '@nitrostack/core';
 import { StateManager } from '../orchestrator/state-manager.js';
 import { ClerkAgent } from '../agents/clerk.agent.js';
+import { ScoutAgent } from '../agents/scout.agent.js';
+import { ProfilerAgent } from '../agents/profiler.agent.js';
+import { MatchmakerAgent } from '../agents/matchmaker.agent.js';
+import { InventorAgent } from '../agents/inventor.agent.js';
+import { AuditorAgent } from '../agents/auditor.agent.js';
+import { ArchitectAgent } from '../agents/architect.agent.js';
+import { SentinelAgent } from '../agents/sentinel.agent.js';
 import { Scheduler } from '../orchestrator/scheduler.js';
 import { EventBus } from '../orchestrator/event-bus.js';
+import { WasteClassifier } from '../core/waste-classifier.js';
+import { MatchingAlgorithm } from '../core/matching-algorithm.js';
+import { ProductGenerator } from '../core/product-generator.js';
+import { PathwayPlanner } from '../core/pathway-planner.js';
 
-// Instantiate agents and orchestrators
+// Instantiate all 8 agents — each subscribes to events and chains to the next
 const stateManager = StateManager.getInstance();
 const clerkAgent = new ClerkAgent();
+const _scout = new ScoutAgent();
+const _profiler = new ProfilerAgent();
+const _matchmaker = new MatchmakerAgent();
+const _inventor = new InventorAgent();
+const _auditor = new AuditorAgent();
+const _architect = new ArchitectAgent();
+const _sentinel = new SentinelAgent();
 const scheduler = Scheduler.getInstance();
 const eventBus = EventBus.getInstance();
+
+// Bootstrap: profile all initial factories and run the discovery chain once at startup
+// Uses core engines directly to avoid double-firing through the event bus
+(() => {
+  const factories = stateManager.getFactories();
+  stateManager.addLog('System', `Bootstrapping ${factories.length} initial factories...`, 'info');
+
+  const classifier = new WasteClassifier();
+  for (const f of factories) {
+    if (!f.wasteStreams || f.wasteStreams.length === 0) {
+      f.wasteStreams = f.declaredWastes.map(w => classifier.classifyWaste(f.id, f.name, w));
+    }
+  }
+  stateManager.addLog('Profiler', `Classified waste streams for ${factories.length} factories.`, 'success');
+
+  const matcher = new MatchingAlgorithm();
+  const matches = matcher.findMatches(factories);
+  stateManager.setMatches(matches);
+  stateManager.addLog('Matchmaker', `Found ${matches.length} symbiotic matches across the cluster.`, 'success');
+
+  const generator = new ProductGenerator();
+  const products = generator.generateProducts(factories);
+  stateManager.setProducts(products);
+  stateManager.addLog('Inventor', `Generated ${products.length} novel product concepts.`, 'success');
+
+  // Promote top opportunities
+  matches.forEach((m, i) => { if (i < 3) m.status = 'Blueprint Ready'; });
+  products.forEach((p, i) => { if (i < 2) p.status = 'Blueprint Ready'; });
+  stateManager.recalculateMetrics();
+
+  const planner = new PathwayPlanner();
+  for (const m of matches.filter(m => m.status === 'Blueprint Ready')) {
+    stateManager.addBlueprint(planner.planMatchPathway(m));
+  }
+  for (const p of products.filter(p => p.status === 'Blueprint Ready')) {
+    stateManager.addBlueprint(planner.planProductPathway(p));
+  }
+
+  const state = stateManager.getState();
+  stateManager.addLog('System', `Bootstrap complete. Circular score: ${state.circularScore}%, CO2 avoided: ${state.totalCo2Avoided} tons/yr, Value: INR ${(state.totalFinancialValue / 100000).toFixed(1)}L/yr`, 'success');
+})();
 
 // Start scheduler by default
 scheduler.start();
@@ -280,7 +339,7 @@ export class SymbioForgeTools {
     description: 'Retrieve AI-invented product concepts generated from waste streams.',
     inputSchema: z.object({})
   })
-  @Widget('product-concept-cards')
+  @Widget('product-cards')
   public async getProductConcepts(args: any, ctx: ExecutionContext) {
     ctx.logger.info('[SymbioForge] Retrieving product concepts');
     const state = stateManager.getState();
@@ -296,7 +355,7 @@ export class SymbioForgeTools {
     description: 'Retrieve factories and their detailed classified waste streams.',
     inputSchema: z.object({})
   })
-  @Widget('waste-profile-cards')
+  @Widget('waste-profiles')
   public async getWasteProfiles(args: any, ctx: ExecutionContext) {
     ctx.logger.info('[SymbioForge] Retrieving waste profiles');
     const state = stateManager.getState();
