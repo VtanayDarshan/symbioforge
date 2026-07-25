@@ -3,6 +3,23 @@ import { join } from 'path';
 import { Factory, SymbioticMatch, MultiHopChain, ProductConcept, Blueprint, ActivityLog, ClusterState } from '../core/types.js';
 import { ImpactCalculator } from '../core/impact-calculator.js';
 
+// ── Supabase (optional, loaded dynamically) ─────────────────────────────
+let supabaseClient: any = null;
+async function getSupabase() {
+  if (supabaseClient) return supabaseClient;
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  try {
+    // Dynamic import — works at runtime even if package isn't installed at compile time
+    const mod: any = await (Function('return import("@supabase/supabase-js")')());
+    supabaseClient = mod.createClient(url, key);
+    return supabaseClient;
+  } catch {
+    return null; // @supabase/supabase-js not installed — seed-only mode
+  }
+}
+
 export class StateManager {
   private static instance: StateManager;
   private state: ClusterState;
@@ -36,13 +53,80 @@ export class StateManager {
   }
 
   private loadInitialState() {
+    // Step 1: Always load seed data (offline safety net)
     try {
       const initialPath = join(process.cwd(), 'src/data/factories-initial.json');
       const factories: Factory[] = JSON.parse(readFileSync(initialPath, 'utf-8'));
       this.state.factories = factories;
-      this.addLog('System', 'Initial cluster state loaded with 15 factories.', 'info');
+      this.addLog('System', `Seed data loaded: ${factories.length} factories.`, 'info');
     } catch (e) {
-      this.addLog('System', 'Failed to load initial factories.', 'error');
+      this.addLog('System', 'Failed to load seed factories.', 'error');
+    }
+
+    // Step 2: If Supabase is configured, merge DB data on top (async)
+    this.loadFromDatabase();
+  }
+
+  private async loadFromDatabase() {
+    const sb = await getSupabase();
+    if (!sb) return;
+
+    try {
+      const { data, error } = await sb.from('factories').select('*');
+      if (error) throw error;
+      if (data && data.length > 0) {
+        for (const row of data) {
+          const factory: Factory = {
+            id: row.id,
+            name: row.name,
+            industryType: row.industry_type,
+            location: { lat: row.lat, lng: row.lng, address: row.address },
+            productionCapacity: row.production_capacity || '',
+            rawMaterials: row.raw_materials || [],
+            declaredWastes: row.declared_wastes || [],
+            wasteStreams: row.waste_streams || undefined,
+            complianceStatus: row.compliance_status || 'filed',
+            lastFiledDate: row.last_filed_date,
+            savingsEarned: row.savings_earned || 0,
+            co2Avoided: row.co2_avoided || 0
+          };
+          // Merge: DB wins on conflicts (same ID)
+          this.addFactory(factory);
+        }
+        this.addLog('System', `Database sync: ${data.length} factories merged from Supabase.`, 'success');
+      }
+    } catch (err: any) {
+      this.addLog('System', `Database sync failed: ${err.message}. Using seed data only.`, 'warning');
+    }
+  }
+
+  /**
+   * Persist a factory to the database (if configured).
+   * Called in background — does not block tool responses.
+   */
+  public async persistFactory(factory: Factory): Promise<void> {
+    const sb = await getSupabase();
+    if (!sb) return;
+
+    try {
+      await sb.from('factories').upsert({
+        id: factory.id,
+        name: factory.name,
+        industry_type: factory.industryType,
+        lat: factory.location.lat,
+        lng: factory.location.lng,
+        address: factory.location.address,
+        production_capacity: factory.productionCapacity,
+        raw_materials: factory.rawMaterials,
+        declared_wastes: factory.declaredWastes,
+        waste_streams: factory.wasteStreams,
+        compliance_status: factory.complianceStatus,
+        last_filed_date: factory.lastFiledDate,
+        savings_earned: factory.savingsEarned,
+        co2_avoided: factory.co2Avoided
+      }, { onConflict: 'id' });
+    } catch {
+      // Silent fail — RAM is the source of truth, DB is backup
     }
   }
 

@@ -10,6 +10,9 @@ import { WasteProfilesTools } from './waste-profiles.tools.js';
 import { PathwayTools } from './pathway.tools.js';
 import { CarbonMetricsTools } from './carbon-metrics.tools.js';
 import { SimulationTools } from './simulation.tools.js';
+import { ImpactStoryTools } from './impact-story.tools.js';
+import { DistrictDashboardTools } from './district-dashboard.tools.js';
+import { IngestTools } from './ingest.tools.js';
 
 @Module({
   name: 'symbioforge',
@@ -26,6 +29,9 @@ import { SimulationTools } from './simulation.tools.js';
     PathwayTools,
     CarbonMetricsTools,
     SimulationTools,
+    ImpactStoryTools,
+    DistrictDashboardTools,
+    IngestTools,
   ]
 })
 export class SymbioForgeModule {}
