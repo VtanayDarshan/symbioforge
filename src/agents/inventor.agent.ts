@@ -25,7 +25,16 @@ export class InventorAgent {
     const factories = this.stateManager.getFactories();
     this.stateManager.addLog('Inventor', 'Analyzing waste portfolio to generate novel product concepts...', 'info');
 
+    const oldProducts = this.stateManager.getProducts();
+    const oldStatusMap = new Map(oldProducts.map(p => [p.id, p.status]));
+
     const products = this.productGenerator.generateProducts(factories);
+    for (const p of products) {
+      const prev = oldStatusMap.get(p.id);
+      if (prev && prev !== 'New') {
+        p.status = prev;
+      }
+    }
     this.stateManager.setProducts(products);
 
     this.stateManager.addLog(

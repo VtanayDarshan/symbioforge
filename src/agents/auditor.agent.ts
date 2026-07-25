@@ -28,17 +28,10 @@ export class AuditorAgent {
     const products = this.stateManager.getProducts();
     const factories = this.stateManager.getFactories();
 
-    // --- Rank all matches by composite score (compatibilityScore × volume × co2) ---
+    // --- Rank all matches by composite score ---
     const rankedMatches = [...matches].sort((a, b) => {
       const scoreA = a.compatibilityScore * 0.5 + a.co2SavedTonsPerYear * 10 + a.savingsInrPerYear / 10000;
       const scoreB = b.compatibilityScore * 0.5 + b.co2SavedTonsPerYear * 10 + b.savingsInrPerYear / 10000;
-      return scoreB - scoreA;
-    });
-
-    // --- Rank all products by feasibility × revenue potential ---
-    const rankedProducts = [...products].sort((a, b) => {
-      const scoreA = a.feasibilityScore * 0.6 + a.revenuePotentialInrPerYear / 50000 + a.co2SavedTonsPerYear * 5;
-      const scoreB = b.feasibilityScore * 0.6 + b.revenuePotentialInrPerYear / 50000 + b.co2SavedTonsPerYear * 5;
       return scoreB - scoreA;
     });
 
@@ -52,6 +45,14 @@ export class AuditorAgent {
         m.status = 'Evaluated';
       }
     }
+
+
+    // --- Rank all products by feasibility × revenue potential ---
+    const rankedProducts = [...products].sort((a, b) => {
+      const scoreA = a.feasibilityScore * 0.6 + a.revenuePotentialInrPerYear / 50000 + a.co2SavedTonsPerYear * 5;
+      const scoreB = b.feasibilityScore * 0.6 + b.revenuePotentialInrPerYear / 50000 + b.co2SavedTonsPerYear * 5;
+      return scoreB - scoreA;
+    });
 
     // Mark top 2 products as Blueprint Ready (feasibility ≥ 65 threshold from blueprint)
     let markedProducts = 0;

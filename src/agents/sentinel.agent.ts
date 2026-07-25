@@ -4,11 +4,23 @@ import { EventBus } from '../orchestrator/event-bus.js';
 export class SentinelAgent {
   private stateManager: StateManager;
   private eventBus: EventBus;
+  private volumeBaseline: Map<string, number> = new Map();
 
   constructor() {
     this.stateManager = StateManager.getInstance();
     this.eventBus = EventBus.getInstance();
     this.setupListeners();
+    this.captureBaseline();
+  }
+
+  private captureBaseline() {
+    const factories = this.stateManager.getFactories();
+    for (const f of factories) {
+      if (f.wasteStreams) {
+        const total = f.wasteStreams.reduce((sum, w) => sum + w.volume, 0);
+        this.volumeBaseline.set(f.id, total);
+      }
+    }
   }
 
   private setupListeners() {
@@ -19,28 +31,28 @@ export class SentinelAgent {
 
     this.eventBus.subscribe('ECOSYSTEM_STABLE', (event) => {
       if (event.type !== 'ECOSYSTEM_STABLE') return;
-      this.stateManager.addLog('Sentinel', 'Ecosystem stable. All chains operating within parameters. Monitoring active.', 'success');
+      this.runHealthChecks();
     });
 
     this.eventBus.subscribe('VOLUME_UPDATE', (event) => {
       if (event.type !== 'VOLUME_UPDATE') return;
-      this.monitorVolumes(event.payload.factoryId, event.payload.currentVolume);
+      this.handleVolumeUpdate(event.payload.factoryId, event.payload.currentVolume);
     });
   }
 
-  public monitorVolumes(factoryId: string, currentVolume: number) {
+  public handleVolumeUpdate(factoryId: string, currentVolume: number) {
     const factory = this.stateManager.getFactory(factoryId);
     if (!factory) return;
 
-    const totalCurrentWasteVolume = factory.wasteStreams?.reduce((sum, w) => sum + w.volume, 0) || 0;
-    const baselineVolume = totalCurrentWasteVolume || 100;
+    const baseline = this.volumeBaseline.get(factoryId);
+    const expectedVolume = baseline || (factory.wasteStreams?.reduce((sum, w) => sum + w.volume, 0) || 0);
 
-    if (baselineVolume > 0) {
-      const changePercent = Math.abs((currentVolume - baselineVolume) / baselineVolume);
+    if (expectedVolume > 0) {
+      const changePercent = Math.abs((currentVolume - expectedVolume) / expectedVolume);
       if (changePercent > 0.2) {
         this.stateManager.addLog(
           'Sentinel',
-          `Volume anomaly detected in "${factory.name}": reported ${currentVolume} kg vs baseline ${baselineVolume} kg (${(changePercent * 100).toFixed(0)}% deviation).`,
+          `Volume anomaly detected in "${factory.name}": reported ${currentVolume} kg vs baseline ${expectedVolume} kg (${(changePercent * 100).toFixed(0)}% deviation).`,
           'error'
         );
         this.eventBus.publish({
@@ -49,6 +61,7 @@ export class SentinelAgent {
         });
       }
     }
+    this.volumeBaseline.set(factoryId, currentVolume);
   }
 
   public checkComplianceDeadlines() {
@@ -57,6 +70,15 @@ export class SentinelAgent {
     let reminded = 0;
 
     for (const factory of factories) {
+      if (factory.complianceStatus === 'overdue') {
+        this.stateManager.addLog(
+          'Sentinel',
+          `COMPLIANCE ALERT: "${factory.name}" has overdue SPCB filing. Immediate action required.`,
+          'error'
+        );
+        continue;
+      }
+
       if (factory.lastFiledDate) {
         const lastFiled = new Date(factory.lastFiledDate);
         const diffTime = Math.abs(now.getTime() - lastFiled.getTime());
@@ -70,7 +92,6 @@ export class SentinelAgent {
             `Compliance filing reminder: "${factory.name}" — ${label}. Clerk notified.`,
             'warning'
           );
-
           this.eventBus.publish({
             type: 'COMPLIANCE_DUE',
             payload: { factoryId: factory.id, daysOverdue: diffDays - 365 }
@@ -88,84 +109,111 @@ export class SentinelAgent {
   private handleDisruption(reason: string) {
     this.stateManager.addLog('Sentinel', `Disruption detected: ${reason}. Initiating self-healing protocol...`, 'warning');
 
-    const state = this.stateManager.getState();
-    const scoreBefore = state.circularScore;
+    const scoreBefore = this.stateManager.getState().circularScore;
 
-    // --- 1. Identify affected factory from reason string ---
+    // --- 1. Parse disrupted factory ID and remove affected chains ---
     const factoryIdMatch = reason.match(/halt_(.+)|volume_anomaly_(.+)|manual_halt_(.+)/);
     const disruptedId = factoryIdMatch
       ? (factoryIdMatch[1] || factoryIdMatch[2] || factoryIdMatch[3])
       : null;
 
-    // --- 2. Remove or downgrade affected symbiotic chains ---
-    let affectedCount = 0;
     if (disruptedId) {
       const allMatches = this.stateManager.getMatches();
       const affectedMatches = allMatches.filter(
         m => m.sourceFactoryId === disruptedId || m.targetFactoryId === disruptedId
       );
-      affectedCount = affectedMatches.length;
 
-      if (affectedCount > 0) {
-        // Downgrade Blueprint Ready → New so the Architect won't re-use them
-        for (const m of affectedMatches) {
-          m.status = 'New';
-        }
+      if (affectedMatches.length > 0) {
+        // Downgrade to New so Architect won't re-use stale blueprints
+        for (const m of affectedMatches) m.status = 'New';
 
-        // Remove multi-hop chains that route through the disrupted factory
-        const allChains = this.stateManager.getChains();
-        const survivingChains = allChains.filter(
+        // Remove multi-hop chains routing through disrupted factory
+        const survivingChains = this.stateManager.getChains().filter(
           c => !c.hops.some(h => h.sourceFactoryId === disruptedId || h.targetFactoryId === disruptedId)
         );
         this.stateManager.setChains(survivingChains);
-
         this.stateManager.recalculateMetrics();
-        const scoreAfter = this.stateManager.getState().circularScore;
 
+        const scoreAfter = this.stateManager.getState().circularScore;
         this.stateManager.addLog(
           'Sentinel',
-          `Impact assessment: ${affectedCount} symbiotic chains disrupted. ` +
+          `Impact assessment: ${affectedMatches.length} symbiotic chains disrupted. ` +
           `Cluster circular score: ${scoreBefore}% → ${scoreAfter}% (−${scoreBefore - scoreAfter}%).`,
           'warning'
         );
       }
     }
 
-    // --- 3. Re-trigger the already-running Matchmaker via event bus (avoids re-instantiation) ---
+    // --- 2. Re-trigger the existing Matchmaker via event bus ---
     this.stateManager.addLog('Sentinel', 'Re-triggering Matchmaker to find replacement symbiotic connections...', 'info');
 
     setTimeout(() => {
-      // Publishing MATCHES_DISCOVERED causes the existing MatchmakerAgent (registered at startup)
-      // to call discoverMatches() — no new instance needed, no duplicate listeners.
       this.eventBus.publish({
         type: 'MATCHES_DISCOVERED',
         payload: { matchIds: [] }
       });
 
-      // Allow time for the matchmaker to finish, then report recovery
       setTimeout(() => {
         const recoveredScore = this.stateManager.getState().circularScore;
         if (recoveredScore >= scoreBefore - 10) {
           this.stateManager.addLog(
             'Sentinel',
-            `Self-healing complete. Replacement connections found. ` +
-            `Cluster score recovered: → ${recoveredScore}%. Ecosystem stable.`,
+            `Self-healing complete. Replacement connections found. Cluster score recovered: → ${recoveredScore}%. Ecosystem stable.`,
             'success'
           );
         } else {
           this.stateManager.addLog(
             'Sentinel',
-            `Self-healing partial. Current cluster score: ${recoveredScore}%. ` +
-            `Some chains remain unresolved. Monitoring continues.`,
+            `Self-healing partial. Current cluster score: ${recoveredScore}%. Some chains remain unresolved. Monitoring continues.`,
             'warning'
           );
         }
-
         this.eventBus.publish({
           type: 'ECOSYSTEM_STABLE',
           payload: { timestamp: new Date().toISOString() }
         });
       }, 1500);
     }, 1000);
+  }
+
+  private runHealthChecks() {
+    this.scanVolumeBaselines();
+    this.trackPerformance();
+    this.stateManager.addLog('Sentinel', 'Health checks complete. Ecosystem stable. Monitoring active.', 'success');
+  }
+
+  private scanVolumeBaselines() {
+    const factories = this.stateManager.getFactories();
+    for (const f of factories) {
+      if (!f.wasteStreams) continue;
+      const current = f.wasteStreams.reduce((sum, w) => sum + w.volume, 0);
+      const baseline = this.volumeBaseline.get(f.id);
+      if (baseline && baseline > 0) {
+        const change = ((current - baseline) / baseline) * 100;
+        if (Math.abs(change) > 25) {
+          this.stateManager.addLog(
+            'Sentinel',
+            `Volume anomaly at "${f.name}": ${change > 0 ? '+' : ''}${change.toFixed(0)}% change from baseline.`,
+            'warning'
+          );
+        }
+      }
+      this.volumeBaseline.set(f.id, current);
+    }
+  }
+
+  private trackPerformance() {
+    const state = this.stateManager.getState();
+    const activeMatches = state.matches.filter(m => m.status === 'Blueprint Ready' || m.status === 'Active').length;
+    const totalMatches = state.matches.length;
+    const conversionRate = totalMatches > 0 ? Math.round((activeMatches / totalMatches) * 100) : 0;
+
+    if (conversionRate < 10 && totalMatches > 5) {
+      this.stateManager.addLog(
+        'Sentinel',
+        `Low conversion rate: only ${conversionRate}% of ${totalMatches} matches have advanced past "New". Consider reviewing match quality thresholds.`,
+        'warning'
+      );
+    }
   }
 }

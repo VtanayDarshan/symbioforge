@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useWidgetSDK } from '@nitrostack/widgets';
-import { Leaf, Droplets, Trash2, DollarSign, TrendingUp, Recycle } from 'lucide-react';
+import { Leaf, Droplets, Trash2, DollarSign, TrendingUp, Recycle, Zap } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +14,7 @@ interface CarbonMetrics {
   totalCo2Avoided: number;
   totalLandfillDiverted: number;
   totalWaterSaved: number;
+  totalEnergySaved: number;
   totalFinancialValue: number;
 }
 
@@ -211,6 +212,14 @@ export default function CarbonDashboard() {
             unit="KL/year"
             color="#06b6d4"
             bgColor="rgba(6,182,212,0.15)"
+          />
+          <MetricCard
+            icon={<Zap size={20} />}
+            label="Energy Saved"
+            value={(data.totalEnergySaved / 1000).toFixed(1)}
+            unit="MWh/year"
+            color="#ec4899"
+            bgColor="rgba(236,72,153,0.15)"
           />
           <MetricCard
             icon={<DollarSign size={20} />}
