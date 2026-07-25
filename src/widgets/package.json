@@ -1,7 +1,6 @@
 {
   "name": "calculator-widgets",
   "version": "1.0.0",
-  "type": "module",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001 --port 3001",

@@ -179,7 +179,23 @@
         }
       ],
       "tags": ["carbon", "ESG", "metrics", "impact"]
+    },
+    {
+      "uri": "/symbiosis-timeline",
+      "name": "SymbioSim Time Machine",
+      "description": "Animated 12-month ecosystem evolution replay with play/pause, speed controls, and score progression chart",
+      "examples": [
+        {
+          "name": "Simulation Run",
+          "description": "Shows ecosystem growth from 0% to ~78% circular score",
+          "data": {
+            "simulation": { "totalMonths": 12, "finalScore": 78 },
+            "snapshots": []
+          }
+        }
+      ],
+      "tags": ["simulation", "timeline", "animation", "demo"]
     }
   ],
-  "generatedAt": "2025-07-25T00:00:00.000Z"
+  "generatedAt": "2026-07-26T00:00:00.000Z"
 }

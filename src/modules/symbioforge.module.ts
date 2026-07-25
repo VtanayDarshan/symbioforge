@@ -9,6 +9,7 @@ import { ProductConceptsTools } from './product-concepts.tools.js';
 import { WasteProfilesTools } from './waste-profiles.tools.js';
 import { PathwayTools } from './pathway.tools.js';
 import { CarbonMetricsTools } from './carbon-metrics.tools.js';
+import { SimulationTools } from './simulation.tools.js';
 
 @Module({
   name: 'symbioforge',
@@ -24,6 +25,7 @@ import { CarbonMetricsTools } from './carbon-metrics.tools.js';
     WasteProfilesTools,
     PathwayTools,
     CarbonMetricsTools,
+    SimulationTools,
   ]
 })
 export class SymbioForgeModule {}
