@@ -13,6 +13,7 @@ src/widgets/out/
 .env.*.local
 
 # IDE
+.claude/
 .idea/
 .vscode/
 *.swp

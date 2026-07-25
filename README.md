@@ -137,95 +137,94 @@ SymBioForge features 8 autonomous agents communicating via an event-driven archi
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 SymBioForge/
-├── src/
-│   ├── agents/                 # 8 autonomous agents
-│   │   ├── clerk.agent.ts
-│   │   ├── scout.agent.ts
-│   │   ├── profiler.agent.ts
-│   │   ├── matchmaker.agent.ts
-│   │   ├── architect.agent.ts
-│   │   ├── inventor.agent.ts
-│   │   ├── auditor.agent.ts
-│   │   ├── sentinel.agent.ts
-│   │   └── index.ts
-│   │
-│   ├── core/                   # Business logic modules
-│   │   ├── waste-classifier.ts
-│   │   ├── compatibility-matrix.ts
-│   │   ├── matching-algorithm.ts
-│   │   ├── compliance-generator.ts
-│   │   ├── impact-calculator.ts
-│   │   ├── pathway-planner.ts
-│   │   ├── product-generator.ts
-│   │   └── types.ts
-│   │
-│   ├── orchestrator/           # Coordination system
-│   │   ├── event-bus.ts
-│   │   ├── state-manager.ts
-│   │   ├── agent-chain.ts
-│   │   ├── scheduler.ts
-│   │   └── index.ts
-│   │
-│   ├── data/                   # Runtime data (JSON)
-│   │   ├── factories-initial.json
-│   │   ├── factory-feed.json
-│   │   ├── compatibility-matrix.json
-│   │   ├── emission-factors.json
-│   │   ├── manufacturing-processes.json
-│   │   ├── market-data.json
-│   │   └── materials-db.json
-│   │
-│   ├── modules/                # NestJS/MCP modules
-│   │   ├── symbioforge.module.ts
-│   │   ├── symbioforge.tools.ts
-│   │   └── calculator/         # Impact calculator module
-│   │
-│   ├── widgets/                # Next.js dashboard
-│   │   ├── app/
-│   │   │   ├── agent-swarm-monitor/
-│   │   │   ├── ecosystem-map/
-│   │   │   ├── compliance-dashboard/
-│   │   │   ├── calculator-result/
-│   │   │   ├── opportunity-feed/
-│   │   │   ├── carbon-dashboard/
-│   │   │   ├── pathway-viewer/
-│   │   │   ├── product-cards/
-│   │   │   ├── waste-profiles/
-│   │   │   └── layout.tsx
-│   │   ├── package.json
-│   │   ├── next.config.js
-│   │   ├── tsconfig.json
-│   │   └── widget-manifest.json
-│   │
-│   ├── types/                  # Global type definitions
-│   ├── templates/              # Report templates
-│   ├── utils/                  # Utilities (fixture loader)
-│   ├── health/                 # System health checks
-│   ├── app.module.ts           # Main application module
-│   └── index.ts                # Entry point
-│
-├── data/                       # Fixture data (JSON)
-│   └── fixtures/
-│       ├── factory-profiles.json
-│       ├── compatibility-matrix.json
-│       ├── emission-factors.json
-│       ├── manufacturing-processes.json
-│       ├── market-pricing.json
-│       └── materials-properties.json
-│
-├── package.json                # MCP Server dependencies
-├── tsconfig.json               # TypeScript ES Module config
-├── .env.example                # Environment template
-├── .gitignore
-└── README.md
+|-- src/
+|   |-- agents/                 # 8 autonomous agents
+|   |   |-- clerk.agent.ts
+|   |   |-- scout.agent.ts
+|   |   |-- profiler.agent.ts
+|   |   |-- matchmaker.agent.ts
+|   |   |-- architect.agent.ts
+|   |   |-- inventor.agent.ts
+|   |   |-- auditor.agent.ts
+|   |   |-- sentinel.agent.ts
+|   |   `-- index.ts
+|   |
+|   |-- core/                   # Business logic modules
+|   |   |-- waste-classifier.ts
+|   |   |-- compatibility-matrix.ts
+|   |   |-- matching-algorithm.ts
+|   |   |-- compliance-generator.ts
+|   |   |-- impact-calculator.ts
+|   |   |-- pathway-planner.ts
+|   |   |-- product-generator.ts
+|   |   `-- types.ts
+|   |
+|   |-- orchestrator/           # Coordination system
+|   |   |-- event-bus.ts
+|   |   |-- state-manager.ts
+|   |   |-- agent-chain.ts
+|   |   |-- scheduler.ts
+|   |   `-- index.ts
+|   |
+|   |-- data/                   # Runtime data (JSON)
+|   |   |-- factories-initial.json
+|   |   |-- factory-feed.json
+|   |   |-- compatibility-matrix.json
+|   |   |-- emission-factors.json
+|   |   |-- manufacturing-processes.json
+|   |   |-- market-data.json
+|   |   `-- materials-db.json
+|   |
+|   |-- modules/                # NestJS/MCP modules
+|   |   |-- symbioforge.module.ts
+|   |   |-- symbioforge.tools.ts
+|   |   `-- calculator/         # Impact calculator module
+|   |
+|   |-- widgets/                # Next.js dashboard
+|   |   |-- app/
+|   |   |   |-- agent-swarm-monitor/
+|   |   |   |-- ecosystem-map/
+|   |   |   |-- compliance-dashboard/
+|   |   |   |-- calculator-result/
+|   |   |   |-- opportunity-feed/
+|   |   |   |-- carbon-dashboard/
+|   |   |   |-- pathway-viewer/
+|   |   |   |-- product-cards/
+|   |   |   |-- waste-profiles/
+|   |   |   `-- layout.tsx
+|   |   |-- package.json
+|   |   |-- next.config.js
+|   |   |-- tsconfig.json
+|   |   `-- widget-manifest.json
+|   |
+|   |-- types/                  # Global type definitions
+|   |-- templates/              # Report templates
+|   |-- utils/                  # Utilities (fixture loader)
+|   |-- health/                 # System health checks
+|   |-- app.module.ts           # Main application module
+|   `-- index.ts                # Entry point
+|
+|-- data/                       # Fixture data (JSON)
+|   `-- fixtures/
+|       |-- factory-profiles.json
+|       |-- compatibility-matrix.json
+|       |-- emission-factors.json
+|       |-- manufacturing-processes.json
+|       |-- market-pricing.json
+|       `-- materials-properties.json
+|
+|-- package.json                # MCP Server dependencies
+|-- tsconfig.json               # TypeScript ES Module config
+|-- .env.example                # Environment template
+|-- .gitignore
+`-- README.md
 ```
 
 ---
-
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -444,7 +443,6 @@ npm run widget -- --prefix src/widgets build
 ## 📖 Documentation
 
 - [data/fixtures/](./data/fixtures/) - Fixture data for testing and development
-- [.agents/skills/](./agents/skills/) - Agent skills and patterns
 
 ---
 
