@@ -1,11 +1,8 @@
 import 'dotenv/config';
 import { McpApplicationFactory } from '@nitrostack/core';
 import { AppModule } from './app.module.js';
-import { SwarmRegistry } from './orchestrator/swarm-registry.js';
 
 async function bootstrap() {
-  SwarmRegistry.initialize();
-
   const server = await McpApplicationFactory.create(AppModule);
   await server.start();
 }
