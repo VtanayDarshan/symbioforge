@@ -1,12 +1,28 @@
 import { ToolDecorator as Tool, ResourceDecorator as Resource, Widget, Injectable, ExecutionContext, z } from '@nitrostack/core';
 import { StateManager } from '../orchestrator/state-manager.js';
 import { ClerkAgent } from '../agents/clerk.agent.js';
+import { ProfilerAgent } from '../agents/profiler.agent.js';
+import { MatchmakerAgent } from '../agents/matchmaker.agent.js';
+import { InventorAgent } from '../agents/inventor.agent.js';
+import { AuditorAgent } from '../agents/auditor.agent.js';
+import { ArchitectAgent } from '../agents/architect.agent.js';
+import { SentinelAgent } from '../agents/sentinel.agent.js';
+import { AgentChain } from '../orchestrator/agent-chain.js';
 import { Scheduler } from '../orchestrator/scheduler.js';
 import { EventBus } from '../orchestrator/event-bus.js';
 
-// Instantiate agents and orchestrators
+// ── Bootstrap: instantiate all 8 agents + orchestrators so event listeners register ──
 const stateManager = StateManager.getInstance();
 const clerkAgent = new ClerkAgent();
+// Instantiate remaining agents — their constructors call setupListeners() to subscribe
+new ProfilerAgent();
+new MatchmakerAgent();
+new InventorAgent();
+new AuditorAgent();
+new ArchitectAgent();
+new SentinelAgent();
+// AgentChain provides the cross-agent logging narrative layer
+AgentChain.getInstance();
 const scheduler = Scheduler.getInstance();
 const eventBus = EventBus.getInstance();
 
@@ -213,9 +229,12 @@ export class SymbioForgeTools {
   })
   public async triggerComplianceCheck(args: {}, ctx: ExecutionContext) {
     ctx.logger.info(`[SymbioForge] Running periodic compliance check...`);
-    const sentinel = new (await import('../agents/sentinel.agent.js')).SentinelAgent();
+    // Publish COMPLIANCE_DUE scan event — the already-running SentinelAgent handles it
+    // We call checkComplianceDeadlines via a lightweight in-process sentinel instance
+    const { SentinelAgent } = await import('../agents/sentinel.agent.js');
+    const sentinel = new SentinelAgent();
     sentinel.checkComplianceDeadlines();
-    return { success: true, message: 'Compliance check initiated across cluster.' };
+    return { success: true, message: 'Compliance deadline check initiated across cluster.', widgetUri: 'ui://agent-swarm-monitor' };
   }
 
   @Tool({
