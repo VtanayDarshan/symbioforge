@@ -70,7 +70,7 @@ export class FixtureLoader {
    */
   static getFactoryById(id: string) {
     const factories = this.loadFactoryProfiles();
-    return factories.find(f => f.id === id);
+    return factories.find((f: any) => f.id === id);
   }
 
   /**
@@ -78,7 +78,7 @@ export class FixtureLoader {
    */
   static getFactoriesByIndustry(industryType: string) {
     const factories = this.loadFactoryProfiles();
-    return factories.filter(f => 
+    return factories.filter((f: any) => 
       f.industryType.toLowerCase() === industryType.toLowerCase()
     );
   }
@@ -88,7 +88,7 @@ export class FixtureLoader {
    */
   static getMaterialById(id: string) {
     const materials = this.loadMaterials();
-    return materials.find(m => m.id === id);
+    return materials.find((m: any) => m.id === id);
   }
 
   /**
@@ -96,7 +96,7 @@ export class FixtureLoader {
    */
   static getMaterialByName(name: string) {
     const materials = this.loadMaterials();
-    return materials.find(m => m.name.toLowerCase() === name.toLowerCase());
+    return materials.find((m: any) => m.name.toLowerCase() === name.toLowerCase());
   }
 
   /**
@@ -104,7 +104,7 @@ export class FixtureLoader {
    */
   static getMaterialsByCategory(category: string) {
     const materials = this.loadMaterials();
-    return materials.filter(m => m.category === category);
+    return materials.filter((m: any) => m.category === category);
   }
 
   /**
@@ -112,7 +112,7 @@ export class FixtureLoader {
    */
   static getProcessByIndustry(industryType: string) {
     const processes = this.loadManufacturingProcesses();
-    return processes.find(p => 
+    return processes.find((p: any) => 
       p.industryType.toLowerCase() === industryType.toLowerCase()
     );
   }
@@ -122,7 +122,7 @@ export class FixtureLoader {
    */
   static getEmissionFactor(processType: string, emissionType: string) {
     const factors = this.loadEmissionFactors();
-    return factors.find(f => 
+    return factors.find((f: any) => 
       f.processType.toLowerCase().includes(processType.toLowerCase()) &&
       f.emissionType.toLowerCase().includes(emissionType.toLowerCase())
     );
@@ -133,7 +133,7 @@ export class FixtureLoader {
    */
   static getPriceForMaterial(materialName: string) {
     const pricing = this.loadMarketPricing();
-    return pricing.marketPricing.find(p =>
+    return pricing.marketPricing.find((p: any) =>
       p.materialName.toLowerCase() === materialName.toLowerCase()
     );
   }
@@ -169,10 +169,10 @@ export class FixtureLoader {
       totalProcesses: this.loadManufacturingProcesses().length,
       totalEmissionFactors: this.loadEmissionFactors().length,
       industriesRepresented: new Set(
-        this.loadFactoryProfiles().map(f => f.industryType)
+        this.loadFactoryProfiles().map((f: any) => f.industryType)
       ).size,
       materialsCategories: new Set(
-        this.loadMaterials().map(m => m.category)
+        this.loadMaterials().map((m: any) => m.category)
       ).size
     };
   }
