@@ -1,109 +1,261 @@
 'use client';
 
-import { useWidgetSDK, useTheme } from '@nitrostack/widgets';
+import type { ReactNode } from 'react';
+import { useWidgetSDK } from '@nitrostack/widgets';
+import { Leaf, Droplets, Trash2, DollarSign, TrendingUp, Recycle } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
-interface CarbonData {
+export interface Waste {}
+
+interface CarbonMetrics {
   success: boolean;
   circularScore: number;
   totalCo2Avoided: number;
   totalLandfillDiverted: number;
   totalWaterSaved: number;
   totalFinancialValue: number;
-  factoriesCount: number;
-  matchesCount: number;
-  productsCount: number;
-  blueprintsCount: number;
 }
 
-function MetricCard({ label, value, unit, color, icon }: { label: string; value: string; unit: string; color: string; icon: string }) {
+function MetricCard({ icon, label, value, unit, color, bgColor }: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  unit: string;
+  color: string;
+  bgColor: string;
+}) {
   return (
-    <div style={{ background: 'var(--card-bg)', borderRadius: 12, padding: 20, border: `1px solid ${color}33`, display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <div style={{ fontSize: 20 }}>{icon}</div>
-      <div style={{ fontSize: 28, fontWeight: 700, color }}>{value}</div>
-      <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{unit}</div>
-      <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{label}</div>
+    <div style={{
+      backgroundColor: '#1e293b',
+      borderRadius: '12px',
+      border: '1px solid #334155',
+      padding: '20px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '12px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{
+          width: '40px',
+          height: '40px',
+          borderRadius: '10px',
+          backgroundColor: bgColor,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: color,
+        }}>
+          {icon}
+        </div>
+        <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>{label}</span>
+      </div>
+      <div>
+        <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#f8fafc' }}>{value}</span>
+        <span style={{ fontSize: '13px', color: '#64748b', marginLeft: '6px' }}>{unit}</span>
+      </div>
     </div>
   );
 }
 
-function CircularGauge({ score }: { score: number }) {
-  const r = 54;
-  const circ = 2 * Math.PI * r;
-  const offset = circ - (score / 100) * circ;
-  const color = score > 60 ? '#10b981' : score > 30 ? '#f59e0b' : '#ef4444';
+function CircularScoreGauge({ score }: { score: number }) {
+  const radius = 70;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (score / 100) * circumference;
+  const scoreColor = score >= 70 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-      <svg width="140" height="140" viewBox="0 0 140 140">
-        <circle cx="70" cy="70" r={r} fill="none" stroke="var(--border)" strokeWidth="10" />
-        <circle cx="70" cy="70" r={r} fill="none" stroke={color} strokeWidth="10"
-          strokeDasharray={circ} strokeDashoffset={offset}
-          strokeLinecap="round" transform="rotate(-90 70 70)"
-          style={{ transition: 'stroke-dashoffset 1s ease' }} />
-        <text x="70" y="65" textAnchor="middle" fill={color} fontSize="28" fontWeight="700">{score}</text>
-        <text x="70" y="85" textAnchor="middle" fill="var(--text-secondary)" fontSize="11">/ 100</text>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+      <svg width="180" height="180" viewBox="0 0 180 180">
+        <circle cx="90" cy="90" r={radius} fill="none" stroke="#1e293b" strokeWidth="12" />
+        <circle
+          cx="90" cy="90" r={radius} fill="none"
+          stroke={scoreColor} strokeWidth="12"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          transform="rotate(-90 90 90)"
+          style={{ transition: 'stroke-dashoffset 1s ease' }}
+        />
+        <text x="90" y="82" textAnchor="middle" fill="#f8fafc" fontSize="32" fontWeight="bold">
+          {score}
+        </text>
+        <text x="90" y="105" textAnchor="middle" fill="#94a3b8" fontSize="12">
+          out of 100
+        </text>
       </svg>
-      <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}>Circular Economy Score</div>
+      <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500 }}>Circular Economy Score</span>
+    </div>
+  );
+}
+
+function ComparisonBar({ label, before, after, unit, color }: {
+  label: string;
+  before: number;
+  after: number;
+  unit: string;
+  color: string;
+}) {
+  const max = Math.max(before, after, 1);
+  return (
+    <div style={{ marginBottom: '14px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8', marginBottom: '6px' }}>
+        <span>{label}</span>
+        <span style={{ color: '#10b981', fontWeight: 'bold' }}>
+          {after > 0 ? `-${((after / Math.max(before, 1)) * 100).toFixed(0)}%` : '0%'} reduced
+        </span>
+      </div>
+      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ height: '8px', backgroundColor: '#334155', borderRadius: '4px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${(before / max) * 100}%`, backgroundColor: '#64748b', borderRadius: '4px' }} />
+          </div>
+          <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>Before: {before.toLocaleString()} {unit}</div>
+        </div>
+        <TrendingUp size={14} style={{ color: '#10b981', flexShrink: 0 }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ height: '8px', backgroundColor: '#334155', borderRadius: '4px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${(Math.max(before - after, 0) / max) * 100}%`, backgroundColor: color, borderRadius: '4px' }} />
+          </div>
+          <div style={{ fontSize: '10px', color, marginTop: '2px' }}>After: {Math.max(before - after, 0).toLocaleString()} {unit}</div>
+        </div>
+      </div>
     </div>
   );
 }
 
 export default function CarbonDashboard() {
-  const theme = useTheme();
   const { isReady, getToolOutput } = useWidgetSDK();
-  const data = getToolOutput<CarbonData>();
+  const data = getToolOutput<CarbonMetrics>();
 
-  const isDark = theme === 'dark';
-  const vars = {
-    '--card-bg': isDark ? '#1e293b' : '#f8fafc',
-    '--text-primary': isDark ? '#e2e8f0' : '#1e293b',
-    '--text-secondary': isDark ? '#94a3b8' : '#64748b',
-    '--border': isDark ? '#334155' : '#e2e8f0',
-    '--bg': isDark ? '#0f172a' : '#ffffff',
-  } as React.CSSProperties;
-
-  if (!isReady || !data) {
-    return <div style={{ padding: 20, textAlign: 'center', color: '#666' }}>Loading Carbon Dashboard...</div>;
+  if (!isReady) {
+    return (
+      <div style={{ padding: '20px', color: '#666', textAlign: 'center', fontFamily: 'sans-serif' }}>
+        Initializing SDK...
+      </div>
+    );
   }
 
-  const formatNum = (n: number) => n >= 100000 ? `₹${(n / 100000).toFixed(1)}L` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
+  if (!data) {
+    return (
+      <div style={{ padding: '20px', color: '#666', textAlign: 'center', fontFamily: 'sans-serif' }}>
+        Loading Carbon Dashboard...
+      </div>
+    );
+  }
+
+  const estimatedBaselineCo2 = data.totalCo2Avoided * 3.2;
+  const estimatedBaselineLandfill = data.totalLandfillDiverted * 2.5;
+  const estimatedBaselineWater = data.totalWaterSaved * 1.8;
 
   return (
-    <div style={{ ...vars, padding: 20, fontFamily: 'system-ui, sans-serif', color: 'var(--text-primary)', background: 'var(--bg)', minHeight: '100%' }}>
-      <h2 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 700 }}>🌍 Carbon & ESG Dashboard</h2>
-      <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--text-secondary)' }}>Cluster-wide environmental and financial impact metrics</p>
-
-      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 24 }}>
-        <CircularGauge score={data.circularScore ?? 0} />
+    <div style={{
+      padding: '20px',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      backgroundColor: '#0f172a',
+      color: '#f8fafc',
+      borderRadius: '12px',
+      maxWidth: '860px',
+      margin: '0 auto',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '16px' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Recycle style={{ color: '#10b981' }} /> Carbon & Impact Dashboard
+          </h2>
+          <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
+            Cluster-wide environmental and financial impact metrics
+          </p>
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 20 }}>
-        <MetricCard label="CO₂ Avoided" value={(data.totalCo2Avoided ?? 0).toFixed(1)} unit="tons/year" color="#10b981" icon="🌿" />
-        <MetricCard label="Landfill Diverted" value={(data.totalLandfillDiverted ?? 0).toFixed(1)} unit="tons/year" color="#06b6d4" icon="🏭" />
-        <MetricCard label="Water Saved" value={formatNum(data.totalWaterSaved ?? 0)} unit="liters/year" color="#3b82f6" icon="💧" />
-        <MetricCard label="Financial Value" value={formatNum(data.totalFinancialValue ?? 0)} unit="INR/year" color="#f59e0b" icon="💰" />
+      {/* Top: Score + Metrics */}
+      <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '20px', marginBottom: '24px' }}>
+        {/* Circular Score */}
+        <div style={{
+          backgroundColor: '#1e293b',
+          borderRadius: '12px',
+          border: '1px solid #334155',
+          padding: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <CircularScoreGauge score={data.circularScore} />
+        </div>
+
+        {/* Metric Cards Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <MetricCard
+            icon={<Leaf size={20} />}
+            label="CO2 Avoided"
+            value={data.totalCo2Avoided.toFixed(1)}
+            unit="tons/year"
+            color="#10b981"
+            bgColor="rgba(16,185,129,0.15)"
+          />
+          <MetricCard
+            icon={<Trash2 size={20} />}
+            label="Landfill Diverted"
+            value={data.totalLandfillDiverted.toFixed(1)}
+            unit="tons/year"
+            color="#8b5cf6"
+            bgColor="rgba(139,92,246,0.15)"
+          />
+          <MetricCard
+            icon={<Droplets size={20} />}
+            label="Water Saved"
+            value={(data.totalWaterSaved / 1000).toFixed(1)}
+            unit="KL/year"
+            color="#06b6d4"
+            bgColor="rgba(6,182,212,0.15)"
+          />
+          <MetricCard
+            icon={<DollarSign size={20} />}
+            label="Financial Value"
+            value={`INR ${(data.totalFinancialValue / 100000).toFixed(1)}L`}
+            unit="per year"
+            color="#f59e0b"
+            bgColor="rgba(245,158,11,0.15)"
+          />
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10 }}>
-        <div style={{ background: 'var(--card-bg)', borderRadius: 8, padding: 14, textAlign: 'center' }}>
-          <div style={{ fontSize: 22, fontWeight: 700, color: '#8b5cf6' }}>{data.factoriesCount ?? 0}</div>
-          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Factories</div>
-        </div>
-        <div style={{ background: 'var(--card-bg)', borderRadius: 8, padding: 14, textAlign: 'center' }}>
-          <div style={{ fontSize: 22, fontWeight: 700, color: '#ec4899' }}>{data.matchesCount ?? 0}</div>
-          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Symbioses</div>
-        </div>
-        <div style={{ background: 'var(--card-bg)', borderRadius: 8, padding: 14, textAlign: 'center' }}>
-          <div style={{ fontSize: 22, fontWeight: 700, color: '#f59e0b' }}>{data.productsCount ?? 0}</div>
-          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Products</div>
-        </div>
-        <div style={{ background: 'var(--card-bg)', borderRadius: 8, padding: 14, textAlign: 'center' }}>
-          <div style={{ fontSize: 22, fontWeight: 700, color: '#6366f1' }}>{data.blueprintsCount ?? 0}</div>
-          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Blueprints</div>
-        </div>
+      {/* Before vs After Comparison */}
+      <div style={{
+        backgroundColor: '#1e293b',
+        borderRadius: '12px',
+        border: '1px solid #334155',
+        padding: '20px',
+      }}>
+        <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 'bold', color: '#cbd5e1' }}>
+          Before vs After SymbioForge Integration
+        </h3>
+        <ComparisonBar
+          label="Carbon Emissions"
+          before={estimatedBaselineCo2}
+          after={data.totalCo2Avoided}
+          unit="tons/yr"
+          color="#10b981"
+        />
+        <ComparisonBar
+          label="Landfill Waste"
+          before={estimatedBaselineLandfill}
+          after={data.totalLandfillDiverted}
+          unit="tons/yr"
+          color="#8b5cf6"
+        />
+        <ComparisonBar
+          label="Water Usage"
+          before={estimatedBaselineWater}
+          after={data.totalWaterSaved}
+          unit="L/yr"
+          color="#06b6d4"
+        />
       </div>
     </div>
   );
 }
+

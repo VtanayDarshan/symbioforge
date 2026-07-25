@@ -1,10 +1,12 @@
 'use client';
 
-import { useWidgetSDK, useTheme } from '@nitrostack/widgets';
+import { useMemo, useState } from 'react';
+import { useWidgetSDK } from '@nitrostack/widgets';
+import { ArrowRight, BadgeIndianRupee, Boxes, Factory, Leaf, Lightbulb, Target, Wrench } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
-interface WasteInput {
+interface WasteStreamUse {
   wasteStreamId: string;
   wasteStreamName: string;
   factoryId: string;
@@ -12,11 +14,11 @@ interface WasteInput {
   proportion: number;
 }
 
-interface Product {
+interface ProductConcept {
   id: string;
   name: string;
   description: string;
-  wasteStreamsUsed: WasteInput[];
+  wasteStreamsUsed: WasteStreamUse[];
   manufacturingProcess: string;
   feasibilityScore: number;
   productionCostPerUnit: number;
@@ -24,120 +26,186 @@ interface Product {
   targetMarket: string;
   co2SavedTonsPerYear: number;
   revenuePotentialInrPerYear: number;
-  status: string;
+  status: 'New' | 'Evaluated' | 'Blueprint Ready' | 'Active';
 }
 
-interface ProductData {
-  products: Product[];
+interface ProductConceptData {
+  success: boolean;
+  products: ProductConcept[];
 }
 
-function FeasibilityGauge({ score }: { score: number }) {
-  const color = score > 75 ? '#10b981' : score > 50 ? '#f59e0b' : '#ef4444';
+const formatCompactInr = (value: number) =>
+  `INR ${(value / 100000).toFixed(value >= 1000000 ? 0 : 1)}L`;
+
+function scoreColor(score: number) {
+  if (score >= 80) return '#0f766e';
+  if (score >= 60) return '#2563eb';
+  if (score >= 40) return '#d97706';
+  return '#dc2626';
+}
+
+function EmptyState({ message }: { message: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      <div style={{ width: 60, height: 6, borderRadius: 3, background: 'var(--border)' }}>
-        <div style={{ width: `${score}%`, height: '100%', borderRadius: 3, background: color }} />
-      </div>
-      <span style={{ fontSize: 12, fontWeight: 700, color }}>{score}%</span>
+    <div style={{
+      padding: '24px',
+      minHeight: '220px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      textAlign: 'center',
+      color: '#64748b',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      backgroundColor: '#f8fafc'
+    }}>
+      {message}
     </div>
   );
 }
 
 export default function ProductCards() {
-  const theme = useTheme();
-  const { isReady, getToolOutput } = useWidgetSDK();
-  const data = getToolOutput<ProductData>();
+  const { isReady, getToolOutput, callTool } = useWidgetSDK();
+  const data = getToolOutput<ProductConceptData>();
+  const products = useMemo(() => [...(data?.products ?? [])].sort((a, b) => b.feasibilityScore - a.feasibilityScore), [data]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const isDark = theme === 'dark';
-  const vars = {
-    '--card-bg': isDark ? '#1e293b' : '#f8fafc',
-    '--text-primary': isDark ? '#e2e8f0' : '#1e293b',
-    '--text-secondary': isDark ? '#94a3b8' : '#64748b',
-    '--border': isDark ? '#334155' : '#e2e8f0',
-    '--bg': isDark ? '#0f172a' : '#ffffff',
-  } as React.CSSProperties;
+  if (!isReady) return <EmptyState message="Initializing product concepts..." />;
+  if (!data) return <EmptyState message="Loading AI-invented product concepts..." />;
+  if (!data.success || products.length === 0) return <EmptyState message="No product concepts have been generated yet. Run the Inventor agent to create marketable products." />;
 
-  if (!isReady || !data) {
-    return <div style={{ padding: 20, textAlign: 'center', color: '#666' }}>Loading Product Concepts...</div>;
-  }
-
-  const products = data.products ?? [];
+  const selected = products.find((product) => product.id === selectedId) ?? products[0];
+  const unitMargin = selected.marketPricePerUnit - selected.productionCostPerUnit;
+  const marginPercent = selected.marketPricePerUnit > 0 ? Math.round((unitMargin / selected.marketPricePerUnit) * 100) : 0;
 
   return (
-    <div style={{ ...vars, padding: 20, fontFamily: 'system-ui, sans-serif', color: 'var(--text-primary)', background: 'var(--bg)', minHeight: '100%' }}>
-      <h2 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 700 }}>💡 Product Concepts</h2>
-      <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-secondary)' }}>
-        {products.length} AI-invented product{products.length !== 1 ? 's' : ''} from waste stream combinations
-      </p>
+    <main style={{
+      maxWidth: '940px',
+      margin: '0 auto',
+      padding: '20px',
+      color: '#111827',
+      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      backgroundColor: '#f8fafc'
+    }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', gap: '16px', marginBottom: '16px', flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#7c3aed', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase' }}>
+            <Lightbulb size={16} />
+            Inventor output
+          </div>
+          <h1 style={{ margin: '6px 0 0', fontSize: '22px', letterSpacing: 0 }}>Product Concept Cards</h1>
+        </div>
+        <div style={{ color: '#64748b', fontSize: '12px', fontWeight: 700 }}>{products.length} concepts ranked by feasibility</div>
+      </header>
 
-      {products.length === 0 ? (
-        <div style={{ padding: 30, textAlign: 'center', color: 'var(--text-secondary)' }}>No product concepts generated yet.</div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {products.map((p) => {
-            const margin = p.marketPricePerUnit - p.productionCostPerUnit;
-            const marginPct = Math.round((margin / p.marketPricePerUnit) * 100);
+      <section style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 330px', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+          {products.map((product) => {
+            const isSelected = product.id === selected.id;
+            const color = scoreColor(product.feasibilityScore);
             return (
-              <div key={p.id} style={{ background: 'var(--card-bg)', borderRadius: 12, padding: 16, border: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 15 }}>{p.name}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{p.description}</div>
-                  </div>
-                  <span style={{
-                    fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 10,
-                    background: p.status === 'Blueprint Ready' ? '#10b98122' : p.status === 'Active' ? '#3b82f622' : '#64748b22',
-                    color: p.status === 'Blueprint Ready' ? '#10b981' : p.status === 'Active' ? '#3b82f6' : '#64748b',
-                  }}>{p.status}</span>
+              <button
+                key={product.id}
+                onClick={() => setSelectedId(product.id)}
+                style={{
+                  textAlign: 'left',
+                  border: `1px solid ${isSelected ? color : '#dbe4ef'}`,
+                  borderRadius: '8px',
+                  backgroundColor: '#ffffff',
+                  padding: '14px',
+                  cursor: 'pointer',
+                  boxShadow: isSelected ? '0 10px 24px rgba(15, 23, 42, 0.12)' : 'none',
+                  minHeight: '214px'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'start' }}>
+                  <span style={{ color, fontSize: '12px', fontWeight: 800 }}>{product.feasibilityScore}% feasible</span>
+                  <span style={{ color: '#475569', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase' }}>{product.status}</span>
                 </div>
-
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>Waste Inputs:</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 10 }}>
-                  {p.wasteStreamsUsed.map((w, i) => (
-                    <span key={i} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6, background: isDark ? '#334155' : '#e2e8f0' }}>
-                      {w.wasteStreamName} ({w.factoryName})
-                    </span>
-                  ))}
+                <h2 style={{ margin: '10px 0 6px', fontSize: '16px', lineHeight: 1.3 }}>{product.name}</h2>
+                <p style={{ margin: 0, color: '#64748b', fontSize: '12px', lineHeight: 1.45, minHeight: '52px' }}>{product.description}</p>
+                <div style={{ marginTop: '14px', display: 'grid', gap: '8px', fontSize: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: '#0f766e' }}><Leaf size={15} /> {product.co2SavedTonsPerYear} tons CO2/yr</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: '#2563eb' }}><BadgeIndianRupee size={15} /> {formatCompactInr(product.revenuePotentialInrPerYear)} revenue/yr</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: '#475569' }}><Target size={15} /> {product.targetMarket}</div>
                 </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
-                  <div>
-                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Cost</div>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>₹{p.productionCostPerUnit}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Price</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: '#10b981' }}>₹{p.marketPricePerUnit}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Margin</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: '#f59e0b' }}>{marginPct}%</div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Feasibility</div>
-                    <FeasibilityGauge score={p.feasibilityScore} />
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>CO₂ saved</div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#10b981' }}>{p.co2SavedTonsPerYear} t/yr</div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Revenue</div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#f59e0b' }}>₹{(p.revenuePotentialInrPerYear / 100000).toFixed(1)}L/yr</div>
-                  </div>
-                </div>
-
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 8 }}>
-                  🎯 {p.targetMarket} &nbsp;|&nbsp; ⚙️ {p.manufacturingProcess}
-                </div>
-              </div>
+              </button>
             );
           })}
         </div>
-      )}
-    </div>
+
+        <aside style={{
+          border: '1px solid #dbe4ef',
+          borderRadius: '8px',
+          backgroundColor: '#ffffff',
+          padding: '16px',
+          minHeight: '430px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '14px'
+        }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '17px', lineHeight: 1.3 }}>{selected.name}</h2>
+            <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: '12px', lineHeight: 1.45 }}>{selected.description}</p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px' }}>
+              <div style={{ color: '#64748b', fontSize: '10px', fontWeight: 800 }}>UNIT COST</div>
+              <strong style={{ display: 'block', marginTop: '6px', color: '#dc2626' }}>INR {selected.productionCostPerUnit}</strong>
+            </div>
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px' }}>
+              <div style={{ color: '#64748b', fontSize: '10px', fontWeight: 800 }}>MARKET PRICE</div>
+              <strong style={{ display: 'block', marginTop: '6px', color: '#0f766e' }}>INR {selected.marketPricePerUnit}</strong>
+            </div>
+          </div>
+
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 800 }}>
+              <span>Gross margin</span>
+              <span style={{ color: marginPercent >= 25 ? '#0f766e' : '#d97706' }}>{marginPercent}%</span>
+            </div>
+            <div style={{ marginTop: '8px', height: '8px', backgroundColor: '#e2e8f0', borderRadius: '999px', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${Math.max(0, Math.min(100, marginPercent))}%`, backgroundColor: marginPercent >= 25 ? '#0f766e' : '#d97706' }} />
+            </div>
+          </div>
+
+          <div>
+            <h3 style={{ margin: '0 0 8px', color: '#475569', fontSize: '12px', textTransform: 'uppercase' }}>Waste Inputs</h3>
+            <div style={{ display: 'grid', gap: '8px' }}>
+              {selected.wasteStreamsUsed.map((stream) => (
+                <div key={stream.wasteStreamId} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px', fontSize: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                    <strong><Boxes size={14} style={{ verticalAlign: 'text-bottom', marginRight: '5px', color: '#7c3aed' }} />{stream.wasteStreamName}</strong>
+                    <span style={{ color: '#0f766e', fontWeight: 800 }}>{stream.proportion}%</span>
+                  </div>
+                  <div style={{ marginTop: '5px', color: '#64748b' }}><Factory size={13} style={{ verticalAlign: 'text-bottom', marginRight: '5px' }} />{stream.factoryName}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginTop: 'auto', display: 'grid', gap: '8px' }}>
+            <div style={{ color: '#475569', fontSize: '12px' }}><Wrench size={14} style={{ verticalAlign: 'text-bottom', marginRight: '6px' }} />{selected.manufacturingProcess}</div>
+            <button
+              onClick={() => callTool('get-pathway', { opportunityId: selected.id })}
+              style={{
+                border: 0,
+                borderRadius: '8px',
+                backgroundColor: '#111827',
+                color: '#ffffff',
+                padding: '11px 12px',
+                cursor: 'pointer',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              View Pathway <ArrowRight size={16} />
+            </button>
+          </div>
+        </aside>
+      </section>
+    </main>
   );
 }

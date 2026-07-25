@@ -280,14 +280,14 @@ export class SymbioForgeTools {
     description: 'Retrieve AI-invented product concepts generated from waste streams.',
     inputSchema: z.object({})
   })
-  @Widget('product-concept-cards')
+  @Widget('product-cards')
   public async getProductConcepts(args: any, ctx: ExecutionContext) {
     ctx.logger.info('[SymbioForge] Retrieving product concepts');
     const state = stateManager.getState();
     return {
       success: true,
       products: state.products,
-      widgetUri: 'ui://product-concept-cards'
+      widgetUri: 'ui://product-cards'
     };
   }
 
@@ -296,14 +296,14 @@ export class SymbioForgeTools {
     description: 'Retrieve factories and their detailed classified waste streams.',
     inputSchema: z.object({})
   })
-  @Widget('waste-profile-cards')
+  @Widget('waste-profiles')
   public async getWasteProfiles(args: any, ctx: ExecutionContext) {
     ctx.logger.info('[SymbioForge] Retrieving waste profiles');
     const state = stateManager.getState();
     return {
       success: true,
       factories: state.factories,
-      widgetUri: 'ui://waste-profile-cards'
+      widgetUri: 'ui://waste-profiles'
     };
   }
 
