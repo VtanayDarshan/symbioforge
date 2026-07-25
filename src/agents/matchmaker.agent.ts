@@ -36,7 +36,16 @@ export class MatchmakerAgent {
       }
     }
 
+    const oldMatches = this.stateManager.getMatches();
+    const oldStatusMap = new Map(oldMatches.map(m => [m.id, m.status]));
+
     const matches = this.matchingAlgorithm.findMatches(factories);
+    for (const m of matches) {
+      const prev = oldStatusMap.get(m.id);
+      if (prev && prev !== 'New') {
+        m.status = prev;
+      }
+    }
     this.stateManager.setMatches(matches);
 
     this.stateManager.addLog(

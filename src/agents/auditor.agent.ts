@@ -25,13 +25,11 @@ export class AuditorAgent {
     const matches = this.stateManager.getMatches();
     const products = this.stateManager.getProducts();
 
-    // Mark top 3 matches and top 2 products as Blueprint Ready
-    matches.forEach((m, idx) => {
-      if (idx < 3) m.status = 'Blueprint Ready';
-    });
-    products.forEach((p, idx) => {
-      if (idx < 2) p.status = 'Blueprint Ready';
-    });
+    const newMatches = matches.filter(m => m.status === 'New');
+    newMatches.slice(0, 3).forEach(m => { m.status = 'Blueprint Ready'; });
+
+    const newProducts = products.filter(p => p.status === 'New');
+    newProducts.slice(0, 2).forEach(p => { p.status = 'Blueprint Ready'; });
 
     this.stateManager.recalculateMetrics();
 

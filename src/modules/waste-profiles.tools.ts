@@ -12,6 +12,20 @@ export class WasteProfilesTools {
   public async getWasteProfiles(args: any, ctx: ExecutionContext) {
     ctx.logger.info('[SymbioForge] Retrieving waste profiles');
     const state = stateManager.getState();
-    return { success: true, factories: state.factories, widgetUri: 'ui://waste-profiles' };
+    return {
+      success: true,
+      factories: state.factories.map(f => ({
+        id: f.id,
+        name: f.name,
+        industryType: f.industryType,
+        productionCapacity: f.productionCapacity,
+        declaredWastes: f.declaredWastes,
+        wasteStreams: f.wasteStreams ?? [],
+        complianceStatus: f.complianceStatus,
+        savingsEarned: f.savingsEarned,
+        co2Avoided: f.co2Avoided
+      })),
+      widgetUri: 'ui://waste-profiles'
+    };
   }
 }

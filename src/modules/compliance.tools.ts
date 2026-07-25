@@ -13,12 +13,50 @@ export class ComplianceTools {
   @Widget('compliance-dashboard')
   public async getComplianceReport(args: { factoryId: string }, ctx: ExecutionContext) {
     ctx.logger.info(`[SymbioForge] Retrieving compliance report for: ${args.factoryId}`);
-    const report = await clerkAgent.generateComplianceReport(args.factoryId);
     const factory = stateManager.getFactory(args.factoryId);
-    if (!report || !factory) {
+    if (!factory) {
       return { success: false, message: `Factory with ID "${args.factoryId}" not found.` };
     }
-    return { success: true, factory, complianceReport: report, widgetUri: 'ui://compliance-dashboard' };
+    const pdfPath = await clerkAgent.generateComplianceReport(args.factoryId);
+    const totalVolume = (factory.wasteStreams ?? []).reduce((s, w) => s + w.volume, 0);
+    const hasHazardous = (factory.wasteStreams ?? []).some(w => w.contamination === 'hazardous');
+    const complianceScore = factory.complianceStatus === 'filed' ? 88 : factory.complianceStatus === 'pending' ? 62 : 35;
+    const recommendations: string[] = [];
+    if (hasHazardous) recommendations.push('Obtain TSDF authorization for hazardous waste streams under HWM Rules 2016.');
+    if (totalVolume > 500) recommendations.push('Install continuous effluent monitoring system (CEMS) as per CPCB mandate.');
+    if (factory.co2Avoided < 5) recommendations.push('Increase participation in industrial symbiosis to improve circular economy score.');
+    if (factory.complianceStatus !== 'filed') recommendations.push('File SPCB Form V Annual Environmental Statement immediately to avoid penalties.');
+    if (recommendations.length === 0) recommendations.push('All compliance parameters within norms. Continue annual filing schedule.');
+
+    return {
+      success: true,
+      factory: {
+        id: factory.id,
+        name: factory.name,
+        industryType: factory.industryType,
+        productionCapacity: factory.productionCapacity,
+        complianceStatus: factory.complianceStatus,
+        lastFiledDate: factory.lastFiledDate,
+        savingsEarned: factory.savingsEarned,
+        co2Avoided: factory.co2Avoided,
+        wasteStreams: factory.wasteStreams
+      },
+      complianceReport: {
+        id: `report_${factory.id}_${new Date().getFullYear()}`,
+        factoryId: factory.id,
+        factoryName: factory.name,
+        industryType: factory.industryType,
+        filingYear: new Date().getFullYear(),
+        waterConsentStatus: 'Valid — CTO renewed',
+        airConsentStatus: 'Valid — within PM/SO2 limits',
+        hazardousWasteAuthorization: hasHazardous ? 'Required — pending TSDF linkage' : 'Not required',
+        solidWasteDisposalMethod: 'Authorized recycler + SymbioForge circular exchange',
+        complianceScore,
+        recommendations
+      },
+      pdfPath,
+      widgetUri: 'ui://compliance-dashboard'
+    };
   }
 
   @Tool({
