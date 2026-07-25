@@ -19,7 +19,7 @@ export class ImpactCalculator {
     factories: Factory[],
     matches: SymbioticMatch[],
     products: ProductConcept[]
-  ): Pick<ClusterState, 'circularScore' | 'totalCo2Avoided' | 'totalLandfillDiverted' | 'totalWaterSaved' | 'totalFinancialValue'> {
+  ): Pick<ClusterState, 'circularScore' | 'totalCo2Avoided' | 'totalLandfillDiverted' | 'totalWaterSaved' | 'totalEnergySaved' | 'totalFinancialValue'> {
     // Filter active or blueprint ready opportunities
     const activeMatches = matches.filter(m => m.status === 'Active' || m.status === 'Blueprint Ready');
     const activeProducts = products.filter(p => p.status === 'Active' || p.status === 'Blueprint Ready');
@@ -27,6 +27,7 @@ export class ImpactCalculator {
     let totalCo2Avoided = 0;
     let totalLandfillDiverted = 0;
     let totalWaterSaved = 0;
+    let totalEnergySaved = 0;
     let totalFinancialValue = 0;
 
     // Calculate from matches
@@ -36,8 +37,12 @@ export class ImpactCalculator {
       totalFinancialValue += m.savingsInrPerYear;
 
       // Water saved calculation
-      const factor = this.emissionFactors.waterSavedPerKg?.[m.wasteStreamName] || 10;
-      totalWaterSaved += m.volumeTonsPerYear * 1000 * factor;
+      const waterFactor = this.emissionFactors.waterSavedPerKg?.[m.wasteStreamName] || 10;
+      totalWaterSaved += m.volumeTonsPerYear * 1000 * waterFactor;
+
+      // Energy saved calculation
+      const energyFactor = this.emissionFactors.energySavedKwhPerKg?.[m.wasteStreamName] || 2;
+      totalEnergySaved += m.volumeTonsPerYear * 1000 * energyFactor;
     }
 
     // Calculate from products
@@ -48,10 +53,13 @@ export class ImpactCalculator {
       totalLandfillDiverted += productVolumeTons;
       totalFinancialValue += p.revenuePotentialInrPerYear;
 
-      // Water saved calculation
+      // Water and energy saved calculation
       for (const w of p.wasteStreamsUsed) {
-        const factor = this.emissionFactors.waterSavedPerKg?.[w.wasteStreamName] || 10;
-        totalWaterSaved += (productVolumeTons / p.wasteStreamsUsed.length) * 1000 * factor;
+        const perStreamTons = productVolumeTons / p.wasteStreamsUsed.length;
+        const waterFactor = this.emissionFactors.waterSavedPerKg?.[w.wasteStreamName] || 10;
+        totalWaterSaved += perStreamTons * 1000 * waterFactor;
+        const energyFactor = this.emissionFactors.energySavedKwhPerKg?.[w.wasteStreamName] || 2;
+        totalEnergySaved += perStreamTons * 1000 * energyFactor;
       }
     }
 
@@ -75,6 +83,7 @@ export class ImpactCalculator {
       totalCo2Avoided: parseFloat(totalCo2Avoided.toFixed(2)),
       totalLandfillDiverted: parseFloat(totalLandfillDiverted.toFixed(2)),
       totalWaterSaved: Math.round(totalWaterSaved),
+      totalEnergySaved: Math.round(totalEnergySaved),
       totalFinancialValue
     };
   }

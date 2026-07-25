@@ -111,5 +111,6 @@ export interface ClusterState {
   totalCo2Avoided: number; // tons/year
   totalLandfillDiverted: number; // tons/year
   totalWaterSaved: number; // L/year
+  totalEnergySaved: number; // kWh/year
   totalFinancialValue: number; // INR/year
 }

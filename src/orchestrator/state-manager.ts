@@ -22,6 +22,7 @@ export class StateManager {
       totalCo2Avoided: 0,
       totalLandfillDiverted: 0,
       totalWaterSaved: 0,
+      totalEnergySaved: 0,
       totalFinancialValue: 0
     };
     this.loadInitialState();

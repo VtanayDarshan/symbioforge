@@ -175,6 +175,7 @@ export class SymbioForgeTools {
       totalCo2Avoided: state.totalCo2Avoided,
       totalLandfillDiverted: state.totalLandfillDiverted,
       totalWaterSaved: state.totalWaterSaved,
+      totalEnergySaved: state.totalEnergySaved,
       totalFinancialValue: state.totalFinancialValue,
       factoriesCount: state.factories.length,
       matchesCount: state.matches.length,
@@ -439,6 +440,7 @@ export class SymbioForgeTools {
       totalCo2Avoided: state.totalCo2Avoided,
       totalLandfillDiverted: state.totalLandfillDiverted,
       totalWaterSaved: state.totalWaterSaved,
+      totalEnergySaved: state.totalEnergySaved,
       totalFinancialValue: state.totalFinancialValue,
       widgetUri: 'ui://carbon-dashboard'
     };
