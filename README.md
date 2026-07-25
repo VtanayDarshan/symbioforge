@@ -168,7 +168,6 @@ SymBioForge/
 │   │   ├── state-manager.ts
 │   │   ├── agent-chain.ts
 │   │   ├── scheduler.ts
-│   │   ├── swarm-registry.ts
 │   │   └── index.ts
 │   │
 │   ├── data/                   # Runtime data (JSON)
@@ -183,17 +182,7 @@ SymBioForge/
 │   ├── modules/                # NestJS/MCP modules
 │   │   ├── symbioforge.module.ts
 │   │   ├── symbioforge.tools.ts
-│   │   ├── calculator/         # Impact calculator module
-│   │   ├── clerk.tools.ts
-│   │   ├── scout.tools.ts
-│   │   ├── profiler.tools.ts
-│   │   ├── matchmaker.tools.ts
-│   │   ├── architect.tools.ts
-│   │   ├── inventor.tools.ts
-│   │   ├── auditor.tools.ts
-│   │   ├── sentinel.tools.ts
-│   │   ├── swarm.tools.ts
-│   │   └── cluster.resources.ts
+│   │   └── calculator/         # Impact calculator module
 │   │
 │   ├── widgets/                # Next.js dashboard
 │   │   ├── app/
