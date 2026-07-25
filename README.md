@@ -150,7 +150,8 @@ SymBioForge/
 │   │   ├── architect.agent.ts
 │   │   ├── inventor.agent.ts
 │   │   ├── auditor.agent.ts
-│   │   └── sentinel.agent.ts
+│   │   ├── sentinel.agent.ts
+│   │   └── index.ts
 │   │
 │   ├── core/                   # Business logic modules
 │   │   ├── waste-classifier.ts
@@ -166,12 +167,33 @@ SymBioForge/
 │   │   ├── event-bus.ts
 │   │   ├── state-manager.ts
 │   │   ├── agent-chain.ts
-│   │   └── scheduler.ts
+│   │   ├── scheduler.ts
+│   │   ├── swarm-registry.ts
+│   │   └── index.ts
+│   │
+│   ├── data/                   # Runtime data (JSON)
+│   │   ├── factories-initial.json
+│   │   ├── factory-feed.json
+│   │   ├── compatibility-matrix.json
+│   │   ├── emission-factors.json
+│   │   ├── manufacturing-processes.json
+│   │   ├── market-data.json
+│   │   └── materials-db.json
 │   │
 │   ├── modules/                # NestJS/MCP modules
 │   │   ├── symbioforge.module.ts
+│   │   ├── symbioforge.tools.ts
 │   │   ├── calculator/         # Impact calculator module
-│   │   └── symbioforge.tools.ts
+│   │   ├── clerk.tools.ts
+│   │   ├── scout.tools.ts
+│   │   ├── profiler.tools.ts
+│   │   ├── matchmaker.tools.ts
+│   │   ├── architect.tools.ts
+│   │   ├── inventor.tools.ts
+│   │   ├── auditor.tools.ts
+│   │   ├── sentinel.tools.ts
+│   │   ├── swarm.tools.ts
+│   │   └── cluster.resources.ts
 │   │
 │   ├── widgets/                # Next.js dashboard
 │   │   ├── app/
@@ -180,6 +202,10 @@ SymBioForge/
 │   │   │   ├── compliance-dashboard/
 │   │   │   ├── calculator-result/
 │   │   │   ├── opportunity-feed/
+│   │   │   ├── carbon-dashboard/
+│   │   │   ├── pathway-viewer/
+│   │   │   ├── product-cards/
+│   │   │   ├── waste-profiles/
 │   │   │   └── layout.tsx
 │   │   ├── package.json
 │   │   ├── next.config.js
@@ -193,29 +219,20 @@ SymBioForge/
 │   ├── app.module.ts           # Main application module
 │   └── index.ts                # Entry point
 │
-├── member-4/                   # Phase 1-3 Widget Development
-│   ├── src/
-│   │   ├── components/         # React components
-│   │   ├── hooks/              # Custom React hooks
-│   │   ├── services/           # Business logic services
-│   │   ├── styles/             # CSS styling
-│   │   └── types/              # Type definitions
-│   └── Documentation/
-│
 ├── data/                       # Fixture data (JSON)
-│   ├── factories-initial.json
-│   ├── compatibility-matrix.json
-│   ├── emission-factors.json
-│   ├── manufacturing-processes.json
-│   ├── materials-db.json
-│   └── market-data.json
+│   └── fixtures/
+│       ├── factory-profiles.json
+│       ├── compatibility-matrix.json
+│       ├── emission-factors.json
+│       ├── manufacturing-processes.json
+│       ├── market-pricing.json
+│       └── materials-properties.json
 │
 ├── package.json                # MCP Server dependencies
 ├── tsconfig.json               # TypeScript ES Module config
 ├── .env.example                # Environment template
 ├── .gitignore
-├── README.md
-└── MERGE-INTEGRATION-REPORT.md
+└── README.md
 ```
 
 ---
@@ -437,9 +454,7 @@ npm run widget -- --prefix src/widgets build
 
 ## 📖 Documentation
 
-- [MERGE-INTEGRATION-REPORT.md](./MERGE-INTEGRATION-REPORT.md) - Branch merge details
-- [INTEGRATION-CHECKLIST.md](./INTEGRATION-CHECKLIST.md) - Integration validation
-- [member-4/](./member-4/) - Phase 1-3 widget development docs
+- [data/fixtures/](./data/fixtures/) - Fixture data for testing and development
 - [.agents/skills/](./agents/skills/) - Agent skills and patterns
 
 ---
