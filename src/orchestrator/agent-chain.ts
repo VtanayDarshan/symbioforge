@@ -1,11 +1,30 @@
 import { EventBus, SwarmEvent } from './event-bus.js';
 import { StateManager } from './state-manager.js';
 
+/**
+ * AgentChain is the LOGGING layer of the orchestrator.
+ * 
+ * It listens to every event on the bus and writes descriptive activity log entries
+ * so the Agent Swarm Monitor widget shows the full chain narrative.
+ * 
+ * IMPORTANT: AgentChain does NOT re-publish events or call agents directly.
+ * Each agent self-subscribes to its trigger event and executes its own logic.
+ * This eliminates the previous double-trigger bug where both AgentChain and
+ * individual agents were responding to the same events.
+ * 
+ * Flow (agents self-trigger, chain just logs):
+ *   FACTORY_REGISTERED   → ClerkAgent (auto) + [logged here]
+ *   FACTORY_PROFILED     → ProfilerAgent (auto) + [logged here]
+ *   MATCHES_DISCOVERED   → MatchmakerAgent + InventorAgent (auto) + [logged here]
+ *   PRODUCTS_INVENTED    → (feeds into IMPACT_AUDITED below)
+ *   IMPACT_AUDITED       → AuditorAgent (auto) + [logged here]
+ *   PATHWAYS_DESIGNED    → ArchitectAgent (auto) + [logged here]
+ *   ECOSYSTEM_STABLE     → SentinelAgent (auto) + [logged here]
+ */
 export class AgentChain {
   private static instance: AgentChain;
   private eventBus: EventBus;
   private stateManager: StateManager;
-  private isRunning = false;
 
   private constructor() {
     this.eventBus = EventBus.getInstance();
@@ -21,124 +40,90 @@ export class AgentChain {
   }
 
   private setupListeners() {
-    // Clerk -> Scout
-    this.eventBus.subscribe('FACTORY_REGISTERED', (event) => {
-      if (!this.stateManager.getState().swarmActive) return;
-      this.triggerScout(event);
+    // Each handler only logs — the actual agent already handles the event independently.
+
+    this.eventBus.subscribe('FACTORY_REGISTERED', (event: SwarmEvent) => {
+      if (event.type !== 'FACTORY_REGISTERED') return;
+      const factory = this.stateManager.getFactory(event.payload.factoryId);
+      if (factory) {
+        this.stateManager.addLog('Scout', `Ingesting factory profile: "${factory.name}" (${factory.industryType})`, 'info');
+      }
     });
 
-    this.eventBus.subscribe('FACTORY_UPDATED', (event) => {
-      if (!this.stateManager.getState().swarmActive) return;
-      this.triggerScout(event);
+    this.eventBus.subscribe('FACTORY_UPDATED', (event: SwarmEvent) => {
+      if (event.type !== 'FACTORY_UPDATED') return;
+      const factory = this.stateManager.getFactory(event.payload.factoryId);
+      if (factory) {
+        this.stateManager.addLog('Scout', `Factory profile updated: "${factory.name}" — re-triggering chain.`, 'info');
+      }
     });
 
-    // Scout -> Profiler
-    this.eventBus.subscribe('FACTORY_PROFILED', (event) => {
-      if (!this.stateManager.getState().swarmActive) return;
-      this.triggerProfiler(event);
+    this.eventBus.subscribe('FACTORY_PROFILED', (event: SwarmEvent) => {
+      if (event.type !== 'FACTORY_PROFILED') return;
+      const factory = this.stateManager.getFactory(event.payload.factoryId);
+      if (factory) {
+        this.stateManager.addLog(
+          'Profiler',
+          `Starting waste stream classification for "${factory.name}"...`,
+          'info'
+        );
+      }
     });
 
-    // Profiler -> Matchmaker & Inventor
-    this.eventBus.subscribe('MATCHES_DISCOVERED', (event) => {
-      if (!this.stateManager.getState().swarmActive) return;
-      this.triggerMatchmakerAndInventor(event);
+    this.eventBus.subscribe('MATCHES_DISCOVERED', (event: SwarmEvent) => {
+      if (event.type !== 'MATCHES_DISCOVERED') return;
+      const factoryCount = this.stateManager.getFactories().length;
+      this.stateManager.addLog(
+        'Matchmaker',
+        `Scanning ${factoryCount} factories for new symbiotic matches and multi-hop chains...`,
+        'info'
+      );
+      this.stateManager.addLog(
+        'Inventor',
+        `Analyzing cluster waste portfolio for novel product concepts...`,
+        'info'
+      );
     });
 
-    // Matchmaker & Inventor -> Auditor
-    this.eventBus.subscribe('PRODUCTS_INVENTED', (event) => {
-      if (!this.stateManager.getState().swarmActive) return;
-      this.triggerAuditor();
+    this.eventBus.subscribe('IMPACT_AUDITED', (event: SwarmEvent) => {
+      if (event.type !== 'IMPACT_AUDITED') return;
+      const matches = this.stateManager.getMatches().length;
+      const products = this.stateManager.getProducts().length;
+      this.stateManager.addLog(
+        'Auditor',
+        `Computing ESG and financial impact across ${matches} matches and ${products} product concepts...`,
+        'info'
+      );
     });
 
-    // Auditor -> Architect
-    this.eventBus.subscribe('IMPACT_AUDITED', (event) => {
-      if (!this.stateManager.getState().swarmActive) return;
-      this.triggerArchitect(event);
+    this.eventBus.subscribe('PATHWAYS_DESIGNED', (event: SwarmEvent) => {
+      if (event.type !== 'PATHWAYS_DESIGNED') return;
+      const blueprintReady = this.stateManager.getMatches().filter(m => m.status === 'Blueprint Ready').length
+        + this.stateManager.getProducts().filter(p => p.status === 'Blueprint Ready').length;
+      this.stateManager.addLog(
+        'Architect',
+        `Generating manufacturing blueprints for ${blueprintReady} top-ranked opportunities...`,
+        'info'
+      );
     });
 
-    // Architect -> Sentinel
-    this.eventBus.subscribe('PATHWAYS_DESIGNED', (event) => {
-      if (!this.stateManager.getState().swarmActive) return;
-      this.triggerSentinel();
+    this.eventBus.subscribe('ECOSYSTEM_STABLE', (event: SwarmEvent) => {
+      if (event.type !== 'ECOSYSTEM_STABLE') return;
+      const score = this.stateManager.getState().circularScore;
+      this.stateManager.addLog(
+        'Sentinel',
+        `Chain cycle complete. Cluster circular economy score: ${score}%. Monitoring for changes.`,
+        'success'
+      );
     });
-  }
 
-  private async triggerScout(event: SwarmEvent) {
-    if (event.type !== 'FACTORY_REGISTERED' && event.type !== 'FACTORY_UPDATED') return;
-    const { factoryId } = event.payload;
-    const factory = this.stateManager.getFactory(factoryId);
-    if (!factory) return;
-
-    this.stateManager.addLog('Scout', `Ingesting factory profile: "${factory.name}"`, 'info');
-
-    // Simulate Scout processing delay
-    setTimeout(() => {
-      this.eventBus.publish({
-        type: 'FACTORY_PROFILED',
-        payload: { factoryId }
-      });
-    }, 1000);
-  }
-
-  private async triggerProfiler(event: SwarmEvent) {
-    if (event.type !== 'FACTORY_PROFILED') return;
-    const { factoryId } = event.payload;
-    const factory = this.stateManager.getFactory(factoryId);
-    if (!factory) return;
-
-    this.stateManager.addLog('Profiler', `Classifying waste streams for "${factory.name}"`, 'info');
-
-    // Simulate Profiler processing delay
-    setTimeout(() => {
-      // Profiler logic will run here via the Profiler agent
-      // For now, we publish the next event to keep the chain moving
-      this.eventBus.publish({
-        type: 'MATCHES_DISCOVERED',
-        payload: { matchIds: [] }
-      });
-    }, 1500);
-  }
-
-  private async triggerMatchmakerAndInventor(event: SwarmEvent) {
-    this.stateManager.addLog('Matchmaker', 'Scanning cluster for new symbiotic matches...', 'info');
-    this.stateManager.addLog('Inventor', 'Analyzing waste portfolio to generate novel product concepts...', 'info');
-
-    // Simulate parallel processing
-    setTimeout(() => {
-      this.eventBus.publish({
-        type: 'PRODUCTS_INVENTED',
-        payload: { productIds: [] }
-      });
-    }, 2000);
-  }
-
-  private async triggerAuditor() {
-    this.stateManager.addLog('Auditor', 'Quantifying environmental and financial impact of discoveries...', 'info');
-
-    setTimeout(() => {
-      this.eventBus.publish({
-        type: 'IMPACT_AUDITED',
-        payload: { opportunityIds: [] }
-      });
-    }, 1500);
-  }
-
-  private async triggerArchitect(event: SwarmEvent) {
-    this.stateManager.addLog('Architect', 'Designing complete manufacturing pathways and blueprints...', 'info');
-
-    setTimeout(() => {
-      this.eventBus.publish({
-        type: 'PATHWAYS_DESIGNED',
-        payload: { blueprintIds: [] }
-      });
-    }, 2000);
-  }
-
-  private async triggerSentinel() {
-    this.stateManager.addLog('Sentinel', 'Ecosystem stable. Monitoring for changes and compliance deadlines.', 'success');
-    this.eventBus.publish({
-      type: 'ECOSYSTEM_STABLE',
-      payload: { timestamp: new Date().toISOString() }
+    this.eventBus.subscribe('SENTINEL_TRIGGERED', (event: SwarmEvent) => {
+      if (event.type !== 'SENTINEL_TRIGGERED') return;
+      this.stateManager.addLog(
+        'Sentinel',
+        `Disruption event received: ${event.payload.reason}. Self-healing protocol engaged.`,
+        'warning'
+      );
     });
   }
 }

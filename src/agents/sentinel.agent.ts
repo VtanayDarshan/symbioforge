@@ -1,6 +1,5 @@
 import { StateManager } from '../orchestrator/state-manager.js';
 import { EventBus } from '../orchestrator/event-bus.js';
-import { Factory } from '../core/types.js';
 
 export class SentinelAgent {
   private stateManager: StateManager;
@@ -51,10 +50,14 @@ export class SentinelAgent {
     if (expectedVolume > 0) {
       const changePercent = Math.abs((currentVolume - expectedVolume) / expectedVolume);
       if (changePercent > 0.2) {
-        this.stateManager.addLog('Sentinel', `Volume anomaly detected in ${factory.name}: ${currentVolume} kg vs expected ${expectedVolume} kg.`, 'error');
+        this.stateManager.addLog(
+          'Sentinel',
+          `Volume anomaly detected in "${factory.name}": reported ${currentVolume} kg vs baseline ${expectedVolume} kg (${(changePercent * 100).toFixed(0)}% deviation).`,
+          'error'
+        );
         this.eventBus.publish({
           type: 'SENTINEL_TRIGGERED',
-          payload: { reason: `Volume anomaly > 20% for factory ${factory.id}` }
+          payload: { reason: `volume_anomaly_${factory.id}` }
         });
       }
     }
@@ -64,6 +67,7 @@ export class SentinelAgent {
   public checkComplianceDeadlines() {
     const factories = this.stateManager.getFactories();
     const now = new Date();
+    let reminded = 0;
 
     for (const factory of factories) {
       if (factory.complianceStatus === 'overdue') {
@@ -82,35 +86,99 @@ export class SentinelAgent {
 
         if (diffDays > 330) {
           factory.complianceStatus = diffDays > 365 ? 'overdue' : 'pending';
+          const label = diffDays > 365 ? `OVERDUE by ${diffDays - 365} days` : `due in ${365 - diffDays} days`;
           this.stateManager.addLog(
             'Sentinel',
-            `Compliance deadline approaching/overdue for "${factory.name}" (${diffDays} days since last filing).`,
+            `Compliance filing reminder: "${factory.name}" — ${label}. Clerk notified.`,
             'warning'
           );
           this.eventBus.publish({
             type: 'COMPLIANCE_DUE',
             payload: { factoryId: factory.id, daysOverdue: diffDays - 365 }
           });
+          reminded++;
         }
       }
+    }
+
+    if (reminded === 0) {
+      this.stateManager.addLog('Sentinel', 'Compliance check complete. All factories are current on filings.', 'success');
     }
   }
 
   private handleDisruption(reason: string) {
     this.stateManager.addLog('Sentinel', `Disruption detected: ${reason}. Initiating self-healing protocol...`, 'warning');
 
+    const scoreBefore = this.stateManager.getState().circularScore;
+
+    // --- 1. Parse disrupted factory ID and remove affected chains ---
+    const factoryIdMatch = reason.match(/halt_(.+)|volume_anomaly_(.+)|manual_halt_(.+)/);
+    const disruptedId = factoryIdMatch
+      ? (factoryIdMatch[1] || factoryIdMatch[2] || factoryIdMatch[3])
+      : null;
+
+    if (disruptedId) {
+      const allMatches = this.stateManager.getMatches();
+      const affectedMatches = allMatches.filter(
+        m => m.sourceFactoryId === disruptedId || m.targetFactoryId === disruptedId
+      );
+
+      if (affectedMatches.length > 0) {
+        // Downgrade to New so Architect won't re-use stale blueprints
+        for (const m of affectedMatches) m.status = 'New';
+
+        // Remove multi-hop chains routing through disrupted factory
+        const survivingChains = this.stateManager.getChains().filter(
+          c => !c.hops.some(h => h.sourceFactoryId === disruptedId || h.targetFactoryId === disruptedId)
+        );
+        this.stateManager.setChains(survivingChains);
+        this.stateManager.recalculateMetrics();
+
+        const scoreAfter = this.stateManager.getState().circularScore;
+        this.stateManager.addLog(
+          'Sentinel',
+          `Impact assessment: ${affectedMatches.length} symbiotic chains disrupted. ` +
+          `Cluster circular score: ${scoreBefore}% → ${scoreAfter}% (−${scoreBefore - scoreAfter}%).`,
+          'warning'
+        );
+      }
+    }
+
+    // --- 2. Re-trigger the existing Matchmaker via event bus ---
+    this.stateManager.addLog('Sentinel', 'Re-triggering Matchmaker to find replacement symbiotic connections...', 'info');
+
     setTimeout(() => {
       this.eventBus.publish({
         type: 'MATCHES_DISCOVERED',
         payload: { matchIds: [] }
       });
+
+      setTimeout(() => {
+        const recoveredScore = this.stateManager.getState().circularScore;
+        if (recoveredScore >= scoreBefore - 10) {
+          this.stateManager.addLog(
+            'Sentinel',
+            `Self-healing complete. Replacement connections found. Cluster score recovered: → ${recoveredScore}%. Ecosystem stable.`,
+            'success'
+          );
+        } else {
+          this.stateManager.addLog(
+            'Sentinel',
+            `Self-healing partial. Current cluster score: ${recoveredScore}%. Some chains remain unresolved. Monitoring continues.`,
+            'warning'
+          );
+        }
+        this.eventBus.publish({
+          type: 'ECOSYSTEM_STABLE',
+          payload: { timestamp: new Date().toISOString() }
+        });
+      }, 1500);
     }, 1000);
   }
 
   private runHealthChecks() {
     this.scanVolumeBaselines();
     this.trackPerformance();
-    this.checkComplianceDeadlines();
     this.stateManager.addLog('Sentinel', 'Health checks complete. Ecosystem stable. Monitoring active.', 'success');
   }
 
