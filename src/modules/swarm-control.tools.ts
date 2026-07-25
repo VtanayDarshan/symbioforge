@@ -3,6 +3,23 @@ import { stateManager, scheduler, eventBus } from './bootstrap.js';
 
 @Injectable()
 export class SwarmControlTools {
+  private getSwarmSnapshot() {
+    const state = stateManager.getState();
+    return {
+      circularScore: state.circularScore,
+      totalCo2Avoided: state.totalCo2Avoided,
+      totalLandfillDiverted: state.totalLandfillDiverted,
+      totalWaterSaved: state.totalWaterSaved,
+      totalFinancialValue: state.totalFinancialValue,
+      factoriesCount: state.factories.length,
+      matchesCount: state.matches.length,
+      productsCount: state.products.length,
+      blueprintsCount: state.blueprints.length,
+      logsCount: state.activityLogs.length,
+      activityLogs: state.activityLogs.slice(0, 50)
+    };
+  }
+
   @Tool({
     name: 'control-swarm',
     description: 'Start, stop, or reset the autonomous agent swarm and scheduler.',
@@ -16,15 +33,15 @@ export class SwarmControlTools {
     if (args.action === 'start') {
       stateManager.setSwarmActive(true);
       scheduler.start();
-      return { success: true, message: 'Swarm and scheduler started.', widgetUri: 'ui://agent-swarm-monitor' };
+      return { success: true, message: 'Swarm and scheduler started.', ...this.getSwarmSnapshot(), widgetUri: 'ui://agent-swarm-monitor' };
     } else if (args.action === 'stop') {
       stateManager.setSwarmActive(false);
       scheduler.stop();
-      return { success: true, message: 'Swarm and scheduler stopped.', widgetUri: 'ui://agent-swarm-monitor' };
+      return { success: true, message: 'Swarm and scheduler stopped.', ...this.getSwarmSnapshot(), widgetUri: 'ui://agent-swarm-monitor' };
     } else {
       stateManager.resetState();
       scheduler.reset();
-      return { success: true, message: 'Swarm and cluster state reset to initial values.', widgetUri: 'ui://agent-swarm-monitor' };
+      return { success: true, message: 'Swarm and cluster state reset to initial values.', ...this.getSwarmSnapshot(), widgetUri: 'ui://agent-swarm-monitor' };
     }
   }
 
@@ -41,13 +58,13 @@ export class SwarmControlTools {
     ctx.logger.info(`[SymbioForge] Triggering disruption for: ${args.factoryId}`);
     const factory = stateManager.getFactory(args.factoryId);
     if (!factory) {
-      return { success: false, message: `Factory with ID "${args.factoryId}" not found.` };
+      return { success: false, message: `Factory with ID "${args.factoryId}" not found.`, ...this.getSwarmSnapshot() };
     }
 
     if (args.volume !== undefined) {
       stateManager.addLog('System', `MANUAL ALERT: Volume update injected for ${factory.name} (${args.volume} kg)`, 'info');
       eventBus.publish({ type: 'VOLUME_UPDATE', payload: { factoryId: args.factoryId, currentVolume: args.volume } });
-      return { success: true, message: `Volume update (${args.volume} kg) sent to Sentinel.`, widgetUri: 'ui://agent-swarm-monitor' };
+      return { success: true, message: `Volume update (${args.volume} kg) sent to Sentinel.`, ...this.getSwarmSnapshot(), widgetUri: 'ui://agent-swarm-monitor' };
     }
 
     stateManager.addLog('Sentinel', `MANUAL ALERT: Factory "${factory.name}" reported temporary production halt!`, 'warning');
@@ -59,9 +76,9 @@ export class SwarmControlTools {
       factory.complianceStatus = 'pending';
       stateManager.recalculateMetrics();
       eventBus.publish({ type: 'SENTINEL_TRIGGERED', payload: { reason: `manual_halt_${args.factoryId}` } });
-      return { success: true, message: `Disruption triggered. Sentinel is self-healing ${affectedMatches.length} affected chains.`, widgetUri: 'ui://agent-swarm-monitor' };
+      return { success: true, message: `Disruption triggered. Sentinel is self-healing ${affectedMatches.length} affected chains.`, ...this.getSwarmSnapshot(), widgetUri: 'ui://agent-swarm-monitor' };
     }
 
-    return { success: true, message: `Disruption triggered for "${factory.name}", but no active symbiotic chains were affected.`, widgetUri: 'ui://agent-swarm-monitor' };
+    return { success: true, message: `Disruption triggered for "${factory.name}", but no active symbiotic chains were affected.`, ...this.getSwarmSnapshot(), widgetUri: 'ui://agent-swarm-monitor' };
   }
 }

@@ -1,6 +1,11 @@
 import { ToolDecorator as Tool, Widget, Injectable, ExecutionContext, z } from '@nitrostack/core';
 import { clerkAgent } from './bootstrap.js';
 
+const stringOrArray = z.union([
+  z.array(z.string()),
+  z.string().transform(s => s.split(',').map(v => v.trim()).filter(Boolean))
+]);
+
 @Injectable()
 export class RegisterFactoryTools {
   @Tool({
@@ -14,8 +19,8 @@ export class RegisterFactoryTools {
       lat: z.number().describe('Latitude coordinate'),
       lng: z.number().describe('Longitude coordinate'),
       productionCapacity: z.string().describe('Production capacity (e.g., 5 tons/day fabric)'),
-      rawMaterials: z.array(z.string()).describe('List of raw materials consumed'),
-      declaredWastes: z.array(z.string()).describe('List of declared waste streams')
+      rawMaterials: stringOrArray.describe('List of raw materials consumed (comma-separated or array)'),
+      declaredWastes: stringOrArray.describe('List of declared waste streams (comma-separated or array)')
     })
   })
   @Widget('compliance-dashboard')
@@ -23,16 +28,18 @@ export class RegisterFactoryTools {
     args: {
       id: string; name: string; industryType: string; address: string;
       lat: number; lng: number; productionCapacity: string;
-      rawMaterials: string[]; declaredWastes: string[];
+      rawMaterials: string | string[]; declaredWastes: string | string[];
     },
     ctx: ExecutionContext
   ) {
     ctx.logger.info(`[SymbioForge] Registering factory: ${args.name}`);
+    const rawMaterials = Array.isArray(args.rawMaterials) ? args.rawMaterials : args.rawMaterials.split(',').map(s => s.trim()).filter(Boolean);
+    const declaredWastes = Array.isArray(args.declaredWastes) ? args.declaredWastes : args.declaredWastes.split(',').map(s => s.trim()).filter(Boolean);
     const { factory, reportPath } = await clerkAgent.registerFactory({
       id: args.id, name: args.name, industryType: args.industryType,
       location: { lat: args.lat, lng: args.lng, address: args.address },
       productionCapacity: args.productionCapacity,
-      rawMaterials: args.rawMaterials, declaredWastes: args.declaredWastes,
+      rawMaterials, declaredWastes,
       complianceStatus: 'filed'
     });
     return {
