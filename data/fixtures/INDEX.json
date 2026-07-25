@@ -1,0 +1,116 @@
+{
+  "fixtures": [
+    {
+      "name": "factory-profiles.json",
+      "description": "15 realistic factory profiles with industry types, locations, capacity, and waste streams",
+      "recordCount": 15,
+      "schema": {
+        "id": "Factory identifier",
+        "name": "Factory name",
+        "industryType": "Type of industry (textile, metal, packaging, etc.)",
+        "locationCoordinates": "GPS coordinates for geographic proximity analysis",
+        "productionCapacityDailyKg": "Daily production output",
+        "rawMaterialsConsumed": "List of input materials",
+        "declaredWasteOutputs": "Array of waste streams with volumes and contamination levels"
+      }
+    },
+    {
+      "name": "materials-properties.json",
+      "description": "Materials properties database with physical, chemical, and economic properties",
+      "recordCount": 11,
+      "schema": {
+        "id": "Material identifier",
+        "name": "Material name",
+        "category": "Material category (textile, metallic, polymeric, etc.)",
+        "density": "Material density",
+        "moistureContent": "Percentage moisture",
+        "meltingPointC": "Temperature in Celsius",
+        "recyclingPotential": "Economic reuse potential",
+        "valuePerKg": "Current market value",
+        "hazardousProperties": "Boolean for hazmat classification"
+      }
+    },
+    {
+      "name": "compatibility-matrix.json",
+      "description": "Compatibility rules for waste stream matching between factories",
+      "recordCount": "12 compatibility rules + modifiers",
+      "schema": {
+        "sourceCategory": "Source material category",
+        "targetIndustries": "List of compatible target industries",
+        "baseScore": "Initial compatibility score (0-100)",
+        "requirements": "Special handling or processing needs",
+        "distanceModifiers": "Geographic distance impact on compatibility",
+        "contaminationPenalties": "Contamination level impacts"
+      }
+    },
+    {
+      "name": "manufacturing-processes.json",
+      "description": "Manufacturing processes with energy, water, and chemical consumption",
+      "recordCount": 13,
+      "schema": {
+        "id": "Process identifier",
+        "name": "Process name",
+        "industryType": "Associated industry",
+        "inputMaterials": "Required inputs",
+        "outputWaste": "Generated waste streams",
+        "energyConsumption": "Daily energy requirement",
+        "waterConsumption": "Daily water requirement",
+        "chemicalsUsed": "Chemicals in the process"
+      }
+    },
+    {
+      "name": "emission-factors.json",
+      "description": "Environmental impact factors for various processes and waste treatments",
+      "recordCount": 14,
+      "schema": {
+        "processType": "Type of process or waste treatment",
+        "emissionType": "Type of emission (CO2, CH4, water, particulates, etc.)",
+        "factorValue": "Emission or consumption coefficient",
+        "unitBasis": "Unit for the factor (kg per unit)",
+        "source": "Data source/authority",
+        "notes": "Additional context or calculation notes"
+      }
+    },
+    {
+      "name": "market-pricing.json",
+      "description": "Market pricing data for recyclable materials and market factors",
+      "recordCount": 11,
+      "schema": {
+        "materialName": "Material name",
+        "pricePerKg": "Current market price",
+        "priceRange": "Historical price range",
+        "marketTrend": "Price trend direction",
+        "buyerMarket": "Typical buyers",
+        "notes": "Market conditions and factors affecting price"
+      }
+    }
+  ],
+  "summary": {
+    "totalFactories": 15,
+    "totalMaterials": 11,
+    "totalCompatibilityRules": 12,
+    "totalProcesses": 13,
+    "totalEmissionFactors": 14,
+    "totalPricedMaterials": 11
+  },
+  "geographicCoverage": "Primarily India-based factories with coordinates for Tier-1, Tier-2 cities",
+  "industryTypesIncluded": [
+    "textile",
+    "metal fabrication",
+    "packaging",
+    "plastics manufacturing",
+    "chemical processing",
+    "paper production",
+    "composite manufacturing",
+    "organic fertilizer",
+    "ceramics",
+    "automotive parts",
+    "food processing",
+    "glass manufacturing",
+    "leather tanning",
+    "electronics recycling",
+    "pharmaceutical manufacturing"
+  ],
+  "lastUpdated": "2024-07-25",
+  "version": "1.0"
+}

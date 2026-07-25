@@ -1,26 +1,31 @@
 {
-  "name": "project-context",
+  "name": "my-mcp-server",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "type": "module",
+  "description": "MCP Server For Hackathon Project",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nitrostack-cli dev",
+    "build": "nitrostack-cli build",
+    "start": "npm run build && nitrostack-cli start",
+    "start:prod": "nitrostack-cli start",
+    "upgrade": "nitrostack-cli upgrade",
+    "install:all": "nitrostack-cli install",
+    "widget": "npm --prefix src/widgets"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/kuchipudiyokshith9999-eng/SymBioForge.git"
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "@nitrostack/core": "^1.0.14",
+    "zod": "^3.22.4",
+    "@modelcontextprotocol/ext-apps": ">=0.1.0"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/kuchipudiyokshith9999-eng/SymBioForge/issues"
-  },
-  "homepage": "https://github.com/kuchipudiyokshith9999-eng/SymBioForge#readme",
   "devDependencies": {
-    "@types/node": "^26.1.1",
-    "ts-node": "^10.9.2",
-    "typescript": "^7.0.2"
+    "@nitrostack/cli": "^1.0.15",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.3.3"
+  },
+  "author": "Akhil",
+  "nitrostack": {
+    "skillsVersion": "1.0.0"
   }
 }

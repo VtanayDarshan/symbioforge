@@ -1,64 +1,93 @@
-import { FactoryProfile, WasteStream, SymbioticMatch } from '../types';
-import { CompatibilityMatrix } from './compatibility-matrix';
+import { Factory, WasteStream, SymbioticMatch } from './types.js';
+import { CompatibilityMatrix } from './compatibility-matrix.js';
 
 export class MatchingAlgorithm {
-  /**
-   * Calculates the geographic distance between two sets of coordinates using the Haversine formula.
-   */
-  public static calculateDistance(
-    coord1: { lat: number; lng: number },
-    coord2: { lat: number; lng: number }
-  ): number {
+  private compatibilityMatrix: CompatibilityMatrix;
+
+  constructor() {
+    this.compatibilityMatrix = new CompatibilityMatrix();
+  }
+
+  // Haversine formula to calculate distance in km
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
     const R = 6371; // Radius of the earth in km
-    const dLat = this.deg2rad(coord2.lat - coord1.lat);
-    const dLon = this.deg2rad(coord2.lng - coord1.lng); 
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(this.deg2rad(coord1.lat)) * Math.cos(this.deg2rad(coord2.lat)) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2); 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-    return R * c; 
+    const dLat = this.deg2rad(lat2 - lat1);
+    const dLon = this.deg2rad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const d = R * c; // Distance in km
+    return parseFloat(d.toFixed(2));
   }
 
-  private static deg2rad(deg: number): number {
-    return deg * (Math.PI/180);
+  private deg2rad(deg: number): number {
+    return deg * (Math.PI / 180);
   }
 
-  /**
-   * Evaluates all possible matches between a source factory's waste streams and a target factory.
-   */
-  public static findMatches(source: FactoryProfile, target: FactoryProfile): SymbioticMatch[] {
+  public findMatches(factories: Factory[]): SymbioticMatch[] {
     const matches: SymbioticMatch[] = [];
-    const allWaste = [...(source.declaredWasteOutputs || []), ...(source.inferredWasteOutputs || [])];
 
-    for (const waste of allWaste) {
-      const materialScore = CompatibilityMatrix.evaluate(waste.category, waste.name, target.industryType);
-      
-      if (materialScore > 0) {
-        const distance = this.calculateDistance(source.locationCoordinates, target.locationCoordinates);
-        
-        // Simple distance penalty: -1 score for every km over 10km
-        const distancePenalty = distance > 10 ? Math.min(20, distance - 10) : 0;
-        
-        // Volume alignment (simplified: assuming target can take whatever is produced if it's the right industry)
-        const volumeScore = 90;
+    for (const source of factories) {
+      if (!source.wasteStreams) continue;
 
-        const finalScore = Math.round((materialScore * 0.6) + (volumeScore * 0.3) - distancePenalty);
+      for (const waste of source.wasteStreams) {
+        for (const target of factories) {
+          if (source.id === target.id) continue;
 
-        if (finalScore >= 50) { // Minimum threshold to be considered a match
-          matches.push({
-            id: `match_${Date.now()}_${Math.floor(Math.random()*1000)}`,
-            sourceFactoryId: source.id,
-            targetFactoryId: target.id,
-            wasteStreamId: waste.id,
-            confidenceScore: finalScore,
-            distanceKm: Number(distance.toFixed(2)),
-            materialCompatibilityScore: materialScore,
-            volumeAlignmentScore: volumeScore
-          });
+          const comp = this.compatibilityMatrix.getCompatibility(waste, target);
+          if (!comp) continue;
+
+          const distance = this.calculateDistance(
+            source.location.lat,
+            source.location.lng,
+            target.location.lat,
+            target.location.lng
+          );
+
+          // Calculate proximity penalty (closer is better, max 50km for SIDCO cluster)
+          const distanceScore = Math.max(0, 100 - distance * 4); // -4 points per km
+
+          // Contamination penalty
+          let contaminationPenalty = 0;
+          if (waste.contamination === 'high') contaminationPenalty = 15;
+          if (waste.contamination === 'hazardous') contaminationPenalty = 40;
+
+          // Composite score
+          const compositeScore = Math.round(
+            comp.score * 0.5 + distanceScore * 0.4 + (100 - contaminationPenalty) * 0.1
+          );
+
+          if (compositeScore >= 50) {
+            // Calculate volume in tons per year (assuming 300 operating days)
+            const volumeTonsPerYear = parseFloat(((waste.volume * 300) / 1000).toFixed(2));
+
+            // Rough CO2 saved: 1.2 tons CO2 saved per ton of waste diverted
+            const co2SavedTonsPerYear = parseFloat((volumeTonsPerYear * 1.2).toFixed(2));
+
+            // Rough savings: INR 5000 saved per ton of waste
+            const savingsInrPerYear = Math.round(volumeTonsPerYear * 5000);
+
+            matches.push({
+              id: `match_${source.id}_${target.id}_${waste.name.toLowerCase().replace(/\s+/g, '_')}`,
+              sourceFactoryId: source.id,
+              sourceFactoryName: source.name,
+              targetFactoryId: target.id,
+              targetFactoryName: target.name,
+              wasteStreamId: waste.id,
+              wasteStreamName: waste.name,
+              compatibilityScore: compositeScore,
+              distanceKm: distance,
+              volumeTonsPerYear,
+              co2SavedTonsPerYear,
+              savingsInrPerYear,
+              status: 'New'
+            });
+          }
         }
       }
     }
-    return matches;
+
+    return matches.sort((a, b) => b.compatibilityScore - a.compatibilityScore);
   }
 }

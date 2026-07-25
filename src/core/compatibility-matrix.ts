@@ -1,57 +1,60 @@
-import { MaterialCategory } from '../types';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { WasteStream, Factory } from './types.js';
 
 export interface CompatibilityRule {
-  sourceCategory: MaterialCategory;
-  sourceNameContains?: string;
-  targetIndustryType: string;
-  baseCompatibilityScore: number;
+  sourceCategory: string;
+  sourceForm: string;
+  targetIndustry: string;
+  targetInput: string;
+  compatibilityScore: number;
+  notes: string;
 }
 
 export class CompatibilityMatrix {
-  private static rules: CompatibilityRule[] = [
-    {
-      sourceCategory: 'organic',
-      sourceNameContains: 'cotton lint',
-      targetIndustryType: 'paper',
-      baseCompatibilityScore: 90
-    },
-    {
-      sourceCategory: 'polymeric',
-      sourceNameContains: 'polyester',
-      targetIndustryType: 'recycling',
-      baseCompatibilityScore: 85
-    },
-    {
-      sourceCategory: 'cellulosic',
-      sourceNameContains: 'cardboard',
-      targetIndustryType: 'packaging',
-      baseCompatibilityScore: 95
-    },
-    {
-      sourceCategory: 'metallic',
-      targetIndustryType: 'metal fabrication',
-      baseCompatibilityScore: 80
-    }
-  ];
+  private rules: CompatibilityRule[] = [];
 
-  /**
-   * Evaluates how compatible a specific waste stream is with a target industry type.
-   * Returns a score from 0 to 100.
-   */
-  public static evaluate(category: MaterialCategory, wasteName: string, targetIndustry: string): number {
-    let score = 0;
-    for (const rule of this.rules) {
-      if (rule.sourceCategory === category && targetIndustry.toLowerCase().includes(rule.targetIndustryType.toLowerCase())) {
-        // If a specific name match is required
-        if (rule.sourceNameContains) {
-          if (wasteName.toLowerCase().includes(rule.sourceNameContains.toLowerCase())) {
-            score = Math.max(score, rule.baseCompatibilityScore);
-          }
-        } else {
-          score = Math.max(score, rule.baseCompatibilityScore);
-        }
-      }
+  constructor() {
+    try {
+      const matrixPath = join(process.cwd(), 'src/data/compatibility-matrix.json');
+      const data = JSON.parse(readFileSync(matrixPath, 'utf-8'));
+      this.rules = data.rules || [];
+    } catch (e) {
+      this.rules = [];
     }
-    return score;
+  }
+
+  public getCompatibility(waste: WasteStream, targetFactory: Factory): { score: number; notes: string } | null {
+    // Find a rule that matches waste category, form, and target industry
+    const rule = this.rules.find(
+      r =>
+        r.sourceCategory === waste.category &&
+        r.sourceForm === waste.physicalForm &&
+        r.targetIndustry === targetFactory.industryType
+    );
+
+    if (rule) {
+      return {
+        score: rule.compatibilityScore,
+        notes: rule.notes
+      };
+    }
+
+    // Generic fallback matching
+    if (waste.category === 'cellulosic' && targetFactory.industryType === 'Paper Manufacturing') {
+      return {
+        score: 60,
+        notes: 'Cellulosic waste can potentially be repulped for paper manufacturing.'
+      };
+    }
+
+    if (waste.category === 'metallic' && targetFactory.industryType === 'Metal Casting') {
+      return {
+        score: 75,
+        notes: 'Metallic waste can potentially be remelted in metal casting.'
+      };
+    }
+
+    return null;
   }
 }

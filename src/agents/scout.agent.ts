@@ -1,25 +1,38 @@
-import { FactoryProfile, SystemEvent } from '../types';
+import { StateManager } from '../orchestrator/state-manager.js';
+import { EventBus } from '../orchestrator/event-bus.js';
 
 export class ScoutAgent {
-  /**
-   * Ingests data when a new factory is discovered or registered.
-   * Processes the FACTORY_REGISTERED event from The Clerk.
-   */
-  public ingest(event: SystemEvent): { event: SystemEvent } | null {
-    if (event.type !== 'FACTORY_REGISTERED') return null;
+  private stateManager: StateManager;
+  private eventBus: EventBus;
 
-    const factory: FactoryProfile = event.payload;
-    console.log(`[Scout Agent] 🔍 Ingesting new factory profile: "${factory.name}"`);
-    console.log(`[Scout Agent] 🔍 Industry: ${factory.industryType}`);
-    console.log(`[Scout Agent] 🔍 Location: Lat ${factory.locationCoordinates.lat}, Lng ${factory.locationCoordinates.lng}`);
-    
-    // Scout packages it and forwards to the Profiler
-    const profilerEvent: SystemEvent = {
-      type: 'FACTORY_PROFILED_PENDING',
-      payload: factory,
-      timestamp: new Date()
-    };
-    
-    return { event: profilerEvent };
+  constructor() {
+    this.stateManager = StateManager.getInstance();
+    this.eventBus = EventBus.getInstance();
+    this.setupListeners();
+  }
+
+  private setupListeners() {
+    this.eventBus.subscribe('FACTORY_REGISTERED', (event) => {
+      if (event.type !== 'FACTORY_REGISTERED') return;
+      this.ingestFactory(event.payload.factoryId);
+    });
+
+    this.eventBus.subscribe('FACTORY_UPDATED', (event) => {
+      if (event.type !== 'FACTORY_UPDATED') return;
+      this.ingestFactory(event.payload.factoryId);
+    });
+  }
+
+  private ingestFactory(factoryId: string) {
+    const factory = this.stateManager.getFactory(factoryId);
+    if (!factory) return;
+
+    this.stateManager.addLog('Scout', `Ingested factory profile: "${factory.name}"`, 'info');
+
+    // Trigger Profiler
+    this.eventBus.publish({
+      type: 'FACTORY_PROFILED',
+      payload: { factoryId }
+    });
   }
 }

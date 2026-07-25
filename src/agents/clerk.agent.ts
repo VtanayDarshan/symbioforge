@@ -1,26 +1,47 @@
-import { FactoryProfile, SystemEvent } from '../types';
-import { SPCBAnnualStatementTemplate } from '../templates/spcb-annual-statement';
+import { StateManager } from '../orchestrator/state-manager.js';
+import { EventBus } from '../orchestrator/event-bus.js';
+import { ComplianceGenerator } from '../core/compliance-generator.js';
+import { Factory } from '../core/types.js';
 
 export class ClerkAgent {
-  /**
-   * Process a new factory registration.
-   * This is the "Single Entry" point described in the milestone.
-   */
-  public registerFactory(factoryInput: FactoryProfile): { complianceReport: string, event: SystemEvent } {
-    console.log(`[Clerk Agent] 📝 New registration received for: "${factoryInput.name}"`);
-    
-    // Output 1: Generate SPCB Compliance Report
-    const complianceReport = SPCBAnnualStatementTemplate.generateReport(factoryInput);
-    console.log(`[Clerk Agent] 📝 SPCB Annual Statement generated (ready for download)`);
-    
-    // Output 2: Generate Event for The Scout
-    const event: SystemEvent = {
-      type: 'FACTORY_REGISTERED',
-      payload: factoryInput,
-      timestamp: new Date()
+  private stateManager: StateManager;
+  private eventBus: EventBus;
+  private complianceGenerator: ComplianceGenerator;
+
+  constructor() {
+    this.stateManager = StateManager.getInstance();
+    this.eventBus = EventBus.getInstance();
+    this.complianceGenerator = new ComplianceGenerator();
+  }
+
+  public registerFactory(factoryData: Omit<Factory, 'savingsEarned' | 'co2Avoided'>): { factory: Factory; report: string } {
+    const factory: Factory = {
+      ...factoryData,
+      savingsEarned: 0,
+      co2Avoided: 0,
+      complianceStatus: 'filed',
+      lastFiledDate: new Date().toISOString().split('T')[0]
     };
-    console.log(`[Clerk Agent] 📝 Structured data forwarded to Scout agent via FACTORY_REGISTERED event`);
-    
-    return { complianceReport, event };
+
+    this.stateManager.addFactory(factory);
+    this.stateManager.addLog('Clerk', `New registration: "${factory.name}"`, 'success');
+
+    const report = this.complianceGenerator.generateSbcbReport(factory);
+    this.stateManager.addLog('Clerk', `SPCB Annual Statement generated for "${factory.name}" (PDF ready for download)`, 'success');
+
+    // Trigger Scout
+    this.eventBus.publish({
+      type: 'FACTORY_REGISTERED',
+      payload: { factoryId: factory.id }
+    });
+
+    return { factory, report };
+  }
+
+  public generateComplianceReport(factoryId: string): string | null {
+    const factory = this.stateManager.getFactory(factoryId);
+    if (!factory) return null;
+
+    return this.complianceGenerator.generateSbcbReport(factory);
   }
 }
