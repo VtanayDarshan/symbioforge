@@ -2,7 +2,6 @@ import { StateManager } from '../orchestrator/state-manager.js';
 import { EventBus } from '../orchestrator/event-bus.js';
 import { MatchingAlgorithm } from '../core/matching-algorithm.js';
 import { WasteClassifier } from '../core/waste-classifier.js';
-import { SymbioticMatch } from '../core/types.js';
 
 export class MatchmakerAgent {
   private stateManager: StateManager;
@@ -23,28 +22,6 @@ export class MatchmakerAgent {
       if (event.type !== 'MATCHES_DISCOVERED') return;
       this.discoverMatches();
     });
-  }
-
-  private discoverMultiHopChains(directMatches: SymbioticMatch[]): string[] {
-    const chains: string[] = [];
-    const bySource = new Map<string, SymbioticMatch[]>();
-    for (const m of directMatches) {
-      const list = bySource.get(m.sourceFactoryId) || [];
-      list.push(m);
-      bySource.set(m.sourceFactoryId, list);
-    }
-
-    for (const hop1 of directMatches) {
-      const hop2List = bySource.get(hop1.targetFactoryId);
-      if (!hop2List) continue;
-      for (const hop2 of hop2List) {
-        if (hop2.targetFactoryId === hop1.sourceFactoryId) continue;
-        chains.push(
-          `${hop1.sourceFactoryName} →[${hop1.wasteStreamName}]→ ${hop1.targetFactoryName} →[${hop2.wasteStreamName}]→ ${hop2.targetFactoryName}`
-        );
-      }
-    }
-    return chains;
   }
 
   public discoverMatches() {
@@ -68,11 +45,13 @@ export class MatchmakerAgent {
       'success'
     );
 
-    const chains = this.discoverMultiHopChains(matches);
+    const chains = this.matchingAlgorithm.findMultiHopChains(matches);
+    this.stateManager.setChains(chains);
+
     if (chains.length > 0) {
       this.stateManager.addLog(
         'Matchmaker',
-        `Discovered ${chains.length} multi-hop supply chains. Example: ${chains[0]}`,
+        `Discovered ${chains.length} multi-hop circular chains (A→B→C).`,
         'success'
       );
     }

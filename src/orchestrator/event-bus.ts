@@ -7,7 +7,9 @@ export type SwarmEvent =
   | { type: 'IMPACT_AUDITED'; payload: { opportunityIds: string[] } }
   | { type: 'PATHWAYS_DESIGNED'; payload: { blueprintIds: string[] } }
   | { type: 'ECOSYSTEM_STABLE'; payload: { timestamp: string } }
-  | { type: 'SENTINEL_TRIGGERED'; payload: { reason: string } };
+  | { type: 'SENTINEL_TRIGGERED'; payload: { reason: string } }
+  | { type: 'VOLUME_UPDATE'; payload: { factoryId: string, currentVolume: number } }
+  | { type: 'COMPLIANCE_DUE'; payload: { factoryId: string, daysOverdue: number } };
 
 export type SwarmEventHandler = (event: SwarmEvent) => void | Promise<void>;
 

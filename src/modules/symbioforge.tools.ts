@@ -47,6 +47,12 @@ const eventBus = EventBus.getInstance();
   stateManager.setMatches(matches);
   stateManager.addLog('Matchmaker', `Found ${matches.length} symbiotic matches across the cluster.`, 'success');
 
+  const chains = matcher.findMultiHopChains(matches);
+  stateManager.setChains(chains);
+  if (chains.length > 0) {
+    stateManager.addLog('Matchmaker', `Discovered ${chains.length} multi-hop circular chains (A→B→C).`, 'success');
+  }
+
   const generator = new ProductGenerator();
   const products = generator.generateProducts(factories);
   stateManager.setProducts(products);
@@ -107,7 +113,7 @@ export class SymbioForgeTools {
   ) {
     ctx.logger.info(`[SymbioForge] Registering factory: ${args.name}`);
     
-    const { factory, report } = clerkAgent.registerFactory({
+    const { factory, reportPath } = await clerkAgent.registerFactory({
       id: args.id,
       name: args.name,
       industryType: args.industryType,
@@ -124,9 +130,9 @@ export class SymbioForgeTools {
 
     return {
       success: true,
-      message: `Factory "${factory.name}" registered successfully. SPCB compliance report generated.`,
+      message: `Factory "${factory.name}" registered successfully. SPCB compliance report generated at ${reportPath}.`,
       factory,
-      complianceReport: report,
+      complianceReportPath: reportPath,
       widgetUri: 'ui://compliance-dashboard'
     };
   }
@@ -141,7 +147,7 @@ export class SymbioForgeTools {
   @Widget('compliance-dashboard')
   public async getComplianceReport(args: { factoryId: string }, ctx: ExecutionContext) {
     ctx.logger.info(`[SymbioForge] Retrieving compliance report for: ${args.factoryId}`);
-    const report = clerkAgent.generateComplianceReport(args.factoryId);
+    const report = await clerkAgent.generateComplianceReport(args.factoryId);
     const factory = stateManager.getFactory(args.factoryId);
     if (!report || !factory) {
       return { success: false, message: `Factory with ID "${args.factoryId}" not found.` };
@@ -209,15 +215,29 @@ export class SymbioForgeTools {
     name: 'trigger-disruption',
     description: 'Simulate a factory shutdown or volume change to test the Sentinel self-healing capabilities.',
     inputSchema: z.object({
-      factoryId: z.string().describe('The ID of the factory to halt')
+      factoryId: z.string().describe('The ID of the factory to halt'),
+      volume: z.number().optional().describe('New waste volume (if simulating volume spike/drop instead of halt)')
     })
   })
   @Widget('agent-swarm-monitor')
-  public async triggerDisruption(args: { factoryId: string }, ctx: ExecutionContext) {
+  public async triggerDisruption(args: { factoryId: string, volume?: number }, ctx: ExecutionContext) {
     ctx.logger.info(`[SymbioForge] Triggering disruption for: ${args.factoryId}`);
     const factory = stateManager.getFactory(args.factoryId);
     if (!factory) {
       return { success: false, message: `Factory with ID "${args.factoryId}" not found.` };
+    }
+
+    if (args.volume !== undefined) {
+      stateManager.addLog('System', `MANUAL ALERT: Volume update injected for ${factory.name} (${args.volume} kg)`, 'info');
+      eventBus.publish({
+        type: 'VOLUME_UPDATE',
+        payload: { factoryId: args.factoryId, currentVolume: args.volume }
+      });
+      return {
+        success: true,
+        message: `Volume update (${args.volume} kg) sent to Sentinel.`,
+        widgetUri: 'ui://agent-swarm-monitor'
+      };
     }
 
     stateManager.addLog('Sentinel', `MANUAL ALERT: Factory "${factory.name}" reported temporary production halt!`, 'warning');
@@ -249,6 +269,17 @@ export class SymbioForgeTools {
       message: `Disruption triggered for "${factory.name}", but no active symbiotic chains were affected.`,
       widgetUri: 'ui://agent-swarm-monitor'
     };
+  }
+
+  @Tool({
+    name: 'trigger-compliance-check',
+    description: 'Forces Sentinel to run its periodic compliance deadline check.',
+    inputSchema: z.object({})
+  })
+  public async triggerComplianceCheck(args: {}, ctx: ExecutionContext) {
+    ctx.logger.info(`[SymbioForge] Running periodic compliance check...`);
+    _sentinel.checkComplianceDeadlines();
+    return { success: true, message: 'Compliance check initiated across cluster.' };
   }
 
   @Tool({
@@ -346,7 +377,7 @@ export class SymbioForgeTools {
     return {
       success: true,
       products: state.products,
-      widgetUri: 'ui://product-concept-cards'
+      widgetUri: 'ui://product-cards'
     };
   }
 
@@ -362,7 +393,7 @@ export class SymbioForgeTools {
     return {
       success: true,
       factories: state.factories,
-      widgetUri: 'ui://waste-profile-cards'
+      widgetUri: 'ui://waste-profiles'
     };
   }
 

@@ -34,6 +34,66 @@ export class SentinelAgent {
       if (event.type !== 'ECOSYSTEM_STABLE') return;
       this.runHealthChecks();
     });
+
+    this.eventBus.subscribe('VOLUME_UPDATE', (event) => {
+      if (event.type !== 'VOLUME_UPDATE') return;
+      this.handleVolumeUpdate(event.payload.factoryId, event.payload.currentVolume);
+    });
+  }
+
+  public handleVolumeUpdate(factoryId: string, currentVolume: number) {
+    const factory = this.stateManager.getFactory(factoryId);
+    if (!factory) return;
+
+    const baseline = this.volumeBaseline.get(factoryId);
+    const expectedVolume = baseline || (factory.wasteStreams?.reduce((sum, w) => sum + w.volume, 0) || 0);
+
+    if (expectedVolume > 0) {
+      const changePercent = Math.abs((currentVolume - expectedVolume) / expectedVolume);
+      if (changePercent > 0.2) {
+        this.stateManager.addLog('Sentinel', `Volume anomaly detected in ${factory.name}: ${currentVolume} kg vs expected ${expectedVolume} kg.`, 'error');
+        this.eventBus.publish({
+          type: 'SENTINEL_TRIGGERED',
+          payload: { reason: `Volume anomaly > 20% for factory ${factory.id}` }
+        });
+      }
+    }
+    this.volumeBaseline.set(factoryId, currentVolume);
+  }
+
+  public checkComplianceDeadlines() {
+    const factories = this.stateManager.getFactories();
+    const now = new Date();
+
+    for (const factory of factories) {
+      if (factory.complianceStatus === 'overdue') {
+        this.stateManager.addLog(
+          'Sentinel',
+          `COMPLIANCE ALERT: "${factory.name}" has overdue SPCB filing. Immediate action required.`,
+          'error'
+        );
+        continue;
+      }
+
+      if (factory.lastFiledDate) {
+        const lastFiled = new Date(factory.lastFiledDate);
+        const diffTime = Math.abs(now.getTime() - lastFiled.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 330) {
+          factory.complianceStatus = diffDays > 365 ? 'overdue' : 'pending';
+          this.stateManager.addLog(
+            'Sentinel',
+            `Compliance deadline approaching/overdue for "${factory.name}" (${diffDays} days since last filing).`,
+            'warning'
+          );
+          this.eventBus.publish({
+            type: 'COMPLIANCE_DUE',
+            payload: { factoryId: factory.id, daysOverdue: diffDays - 365 }
+          });
+        }
+      }
+    }
   }
 
   private handleDisruption(reason: string) {
@@ -48,13 +108,13 @@ export class SentinelAgent {
   }
 
   private runHealthChecks() {
-    this.monitorVolumes();
+    this.scanVolumeBaselines();
     this.trackPerformance();
     this.checkComplianceDeadlines();
     this.stateManager.addLog('Sentinel', 'Health checks complete. Ecosystem stable. Monitoring active.', 'success');
   }
 
-  private monitorVolumes() {
+  private scanVolumeBaselines() {
     const factories = this.stateManager.getFactories();
     for (const f of factories) {
       if (!f.wasteStreams) continue;
@@ -65,7 +125,7 @@ export class SentinelAgent {
         if (Math.abs(change) > 25) {
           this.stateManager.addLog(
             'Sentinel',
-            `Volume anomaly at "${f.name}": ${change > 0 ? '+' : ''}${change.toFixed(0)}% change from baseline. Investigating...`,
+            `Volume anomaly at "${f.name}": ${change > 0 ? '+' : ''}${change.toFixed(0)}% change from baseline.`,
             'warning'
           );
         }
@@ -86,34 +146,6 @@ export class SentinelAgent {
         `Low conversion rate: only ${conversionRate}% of ${totalMatches} matches have advanced past "New". Consider reviewing match quality thresholds.`,
         'warning'
       );
-    }
-  }
-
-  private checkComplianceDeadlines() {
-    const factories = this.stateManager.getFactories();
-    const now = new Date();
-
-    for (const f of factories) {
-      if (f.complianceStatus === 'overdue') {
-        this.stateManager.addLog(
-          'Sentinel',
-          `COMPLIANCE ALERT: "${f.name}" has overdue SPCB filing. Immediate action required.`,
-          'error'
-        );
-        continue;
-      }
-
-      if (f.lastFiledDate) {
-        const filed = new Date(f.lastFiledDate);
-        const monthsSinceFiled = (now.getFullYear() - filed.getFullYear()) * 12 + (now.getMonth() - filed.getMonth());
-        if (monthsSinceFiled >= 10) {
-          this.stateManager.addLog(
-            'Sentinel',
-            `Compliance reminder: "${f.name}" last filed ${monthsSinceFiled} months ago. Annual SPCB renewal due within ${12 - monthsSinceFiled} month(s).`,
-            'warning'
-          );
-        }
-      }
     }
   }
 }

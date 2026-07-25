@@ -46,6 +46,16 @@ export interface SymbioticMatch {
   status: 'New' | 'Evaluated' | 'Blueprint Ready' | 'Active';
 }
 
+export interface MultiHopChain {
+  id: string;
+  hops: SymbioticMatch[];
+  totalDistanceKm: number;
+  totalCo2Saved: number;
+  totalSavingsInr: number;
+  overallCompatibilityScore: number;
+}
+
+
 export interface ProductConcept {
   id: string;
   name: string;
@@ -92,6 +102,7 @@ export interface ActivityLog {
 export interface ClusterState {
   factories: Factory[];
   matches: SymbioticMatch[];
+  chains: MultiHopChain[];
   products: ProductConcept[];
   blueprints: Blueprint[];
   activityLogs: ActivityLog[];
