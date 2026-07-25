@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { Factory, SymbioticMatch, ProductConcept, Blueprint, ActivityLog, ClusterState } from '../core/types.js';
+import { Factory, SymbioticMatch, MultiHopChain, ProductConcept, Blueprint, ActivityLog, ClusterState } from '../core/types.js';
 import { ImpactCalculator } from '../core/impact-calculator.js';
 
 export class StateManager {
@@ -13,6 +13,7 @@ export class StateManager {
     this.state = {
       factories: [],
       matches: [],
+      chains: [],
       products: [],
       blueprints: [],
       activityLogs: [],
@@ -86,6 +87,14 @@ export class StateManager {
   public setMatches(matches: SymbioticMatch[]) {
     this.state.matches = matches;
     this.recalculateMetrics();
+  }
+
+  public getChains(): MultiHopChain[] {
+    return this.state.chains;
+  }
+
+  public setChains(chains: MultiHopChain[]) {
+    this.state.chains = chains;
   }
 
   public getProducts(): ProductConcept[] {
@@ -167,6 +176,7 @@ export class StateManager {
 
   public resetState() {
     this.state.matches = [];
+    this.state.chains = [];
     this.state.products = [];
     this.state.blueprints = [];
     this.state.activityLogs = [];

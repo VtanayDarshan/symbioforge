@@ -63,6 +63,17 @@ export class MatchmakerAgent {
       'success'
     );
 
+    const chains = this.matchingAlgorithm.findMultiHopChains(matches);
+    this.stateManager.setChains(chains);
+    
+    if (chains.length > 0) {
+      this.stateManager.addLog(
+        'Matchmaker',
+        `Discovered ${chains.length} multi-hop circular chains (A→B→C).`,
+        'success'
+      );
+    }
+
     // Trigger Inventor (or let the chain continue)
     this.eventBus.publish({
       type: 'PRODUCTS_INVENTED',

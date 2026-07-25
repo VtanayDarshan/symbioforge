@@ -1,4 +1,4 @@
-import { Factory, WasteStream, SymbioticMatch } from './types.js';
+import { Factory, WasteStream, SymbioticMatch, MultiHopChain } from './types.js';
 import { CompatibilityMatrix } from './compatibility-matrix.js';
 
 export class MatchingAlgorithm {
@@ -89,5 +89,38 @@ export class MatchingAlgorithm {
     }
 
     return matches.sort((a, b) => b.compatibilityScore - a.compatibilityScore);
+  }
+
+  public findMultiHopChains(matches: SymbioticMatch[]): MultiHopChain[] {
+    const chains: MultiHopChain[] = [];
+    const activeMatches = matches.filter(m => m.compatibilityScore >= 60);
+
+    for (const match1 of activeMatches) {
+      // Find a match where match1's target is the source, to form A -> B -> C
+      const nextHops = activeMatches.filter(m => m.sourceFactoryId === match1.targetFactoryId && m.targetFactoryId !== match1.sourceFactoryId);
+
+      for (const match2 of nextHops) {
+        // Prevent simple cycles A -> B -> A, already covered in filter above
+        
+        const chainId = `chain_${match1.sourceFactoryId}_${match1.targetFactoryId}_${match2.targetFactoryId}`;
+        
+        // Basic score combining logic
+        const overallScore = Math.round((match1.compatibilityScore + match2.compatibilityScore) / 2);
+        
+        if (overallScore >= 65) {
+          chains.push({
+            id: chainId,
+            hops: [match1, match2],
+            totalDistanceKm: parseFloat((match1.distanceKm + match2.distanceKm).toFixed(2)),
+            totalCo2Saved: parseFloat((match1.co2SavedTonsPerYear + match2.co2SavedTonsPerYear).toFixed(2)),
+            totalSavingsInr: match1.savingsInrPerYear + match2.savingsInrPerYear,
+            overallCompatibilityScore: overallScore
+          });
+        }
+      }
+    }
+    
+    // Sort by best score
+    return chains.sort((a, b) => b.overallCompatibilityScore - a.overallCompatibilityScore);
   }
 }
