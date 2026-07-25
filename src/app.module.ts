@@ -19,19 +19,11 @@ import { SystemHealthCheck } from './health/system.health.js';
   imports: [
     ConfigModule.forRoot(),
     OAuthModule.forRoot({
-      required: process.env.OAUTH_REQUIRED === 'true',
-      resourceUri: process.env.RESOURCE_URI || 'http://localhost:3000/mcp',
-      authorizationServers: [
-        process.env.AUTH_SERVER_URL || 'http://localhost:3000'
-      ],
-      scopesSupported: ['read', 'write', 'admin'],
-      tokenIntrospectionEndpoint: process.env.INTROSPECTION_ENDPOINT,
-      tokenIntrospectionClientId: process.env.INTROSPECTION_CLIENT_ID,
-      tokenIntrospectionClientSecret: process.env.INTROSPECTION_CLIENT_SECRET,
-      audience: process.env.TOKEN_AUDIENCE,
-      issuer: process.env.TOKEN_ISSUER,
-      jwksUri: process.env.JWKS_URI
+      required: false,
+      resourceUri: 'http://localhost:3000/mcp',
+      authorizationServers: []
     }),
+
     CalculatorModule,
     SymbioForgeModule
   ],
